@@ -136,4 +136,12 @@ app.on('activate', () => {
 
 app.on('before-quit', () => {
   app.isQuitting = true;
+});
+
+// 添加主题变更的 IPC 处理
+ipcMain.on('theme-update', (event, isDark) => {
+    // 获取所有窗口并发送主题变更消息
+    BrowserWindow.getAllWindows().forEach(window => {
+        window.webContents.send('theme-changed', isDark);
+    });
 }); 
