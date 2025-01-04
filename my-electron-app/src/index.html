@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>我的 Electron 应用</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 20px;
+    }
+    #chat-history {
+      border: 1px solid #ccc;
+      height: 300px;
+      overflow-y: scroll;
+      margin-bottom: 10px;
+      padding: 10px;
+    }
+    #input-area {
+      display: flex;
+      margin-bottom: 10px;
+    }
+    #input-area input {
+      flex: 1;
+      padding: 10px;
+      font-size: 16px;
+    }
+    #input-area button {
+      padding: 10px;
+      font-size: 16px;
+    }
+    #settings-button {
+      margin-bottom: 20px;
+    }
+  </style>
+</head>
+<body>
+  <h1>与 AI 聊天</h1>
+  <button id="settings-button">设置</button>
+  <div id="chat-history">
+    <!-- 聊天记录将在这里显示 -->
+  </div>
+  <div id="input-area">
+    <input type="text" id="user-input" placeholder="在此输入消息...">
+    <button id="send-button">发送</button>
+  </div>
+
+  <script>
+    const { ipcRenderer } = require('electron');
+    let apiKey = '';
+
+    ipcRenderer.on('update-api-key', (event, key) => {
+      apiKey = key;
+    });
+
+    document.getElementById('settings-button').addEventListener('click', () => {
+      ipcRenderer.send('open-api-key-window');
+    });
+
+    document.getElementById('user-input').addEventListener('keydown', function(event) {
+      if (event.key === 'Enter') {
+        event.preventDefault();
+        document.getElementById('send-button').click();
+      }
+    });
+
+    document.getElementById('send-button').addEventListener('click', async function() {
+      const userInput = document.getElementById('user-input').value;
+      if (userInput.trim() !== '') {
+        if (apiKey.trim() === '') {
+          alert('API Key 未设置。');
+          return;
+        }
+
+        const chatHistory = document.getElementById('chat-history');
+        const userMessage = document.createElement('div');
+        userMessage.textContent = `你: ${userInput}`;
+        chatHistory.appendChild(userMessage);
+
+        document.getElementById('user-input').value = '';
+        chatHistory.scrollTop = chatHistory.scrollHeight;
+
+        // 调用 DeepSeek API
+        try {
+          const response = await fetch('https://api.deepseek.com/chat/completions', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${apiKey}`
+            },
+            body: JSON.stringify({
+              model: 'deepseek-chat',
+              messages: [
+                { role: 'system', content: '你是一个乐于助人的助手。' },
+                { role: 'user', content: userInput }
+              ],
+              stream: false
+            })
+          });
+
+          const data = await response.json();
+          const aiMessage = document.createElement('div');
+          aiMessage.textContent = `AI: ${data.choices[0].message.content}`;
+          chatHistory.appendChild(aiMessage);
+          chatHistory.scrollTop = chatHistory.scrollHeight;
+        } catch (error) {
+          console.error('调用 DeepSeek API 时出错:', error);
+        }
+      } else {
+        alert('请输入消息。');
+      }
+    });
+  </script>
+</body>
+</html> 

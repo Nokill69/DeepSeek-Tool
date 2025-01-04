@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>API Key 设置</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 20px;
+    }
+    #api-key-area {
+      margin-bottom: 20px;
+    }
+    #api-key-input {
+      width: 100%;
+      padding: 10px;
+      font-size: 16px;
+      resize: none;
+      box-sizing: border-box;
+      overflow: hidden;
+    }
+    #test-result {
+      margin-top: 10px;
+      color: green;
+    }
+    #current-api-key {
+      margin-top: 10px;
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+  <h1>设置 API Key</h1>
+  <div id="api-key-area">
+    <textarea id="api-key-input" placeholder="输入 DeepSeek API Key"></textarea>
+    <button id="set-api-key-button">设置 API Key</button>
+    <button id="test-api-button">测试 API</button>
+    <div id="test-result"></div>
+    <div id="current-api-key">当前 API Key: <span id="api-key-display">无</span></div>
+  </div>
+
+  <script>
+    const { ipcRenderer } = require('electron');
+    let apiKey = '';
+
+    ipcRenderer.on('load-api-key', (event, key) => {
+      apiKey = key;
+      const input = document.getElementById('api-key-input');
+      input.value = apiKey;
+      adjustHeight(input);
+      updateApiKeyDisplay();
+    });
+
+    function updateApiKeyDisplay() {
+      const displayElement = document.getElementById('api-key-display');
+      displayElement.textContent = apiKey.trim() !== '' ? apiKey : '无';
+    }
+
+    function adjustHeight(element) {
+      element.style.height = 'auto';
+      element.style.height = element.scrollHeight + 'px';
+    }
+
+    document.getElementById('api-key-input').addEventListener('input', function() {
+      adjustHeight(this);
+    });
+
+    document.getElementById('set-api-key-button').addEventListener('click', function() {
+      apiKey = document.getElementById('api-key-input').value;
+      if (apiKey.trim() !== '') {
+        alert('API Key 设置成功！');
+        ipcRenderer.send('set-api-key', apiKey);
+      } else {
+        alert('请输入有效的 API Key。');
+      }
+      updateApiKeyDisplay();
+    });
+
+    document.getElementById('test-api-button').addEventListener('click', async function() {
+      if (apiKey.trim() !== '') {
+        try {
+          const response = await fetch('https://api.deepseek.com/chat/completions', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${apiKey}`
+            },
+            body: JSON.stringify({
+              model: 'deepseek-chat',
+              messages: [
+                { role: 'system', content: '测试消息。' }
+              ],
+              stream: false
+            })
+          });
+
+          if (response.ok) {
+            document.getElementById('test-result').textContent = 'API 调用成功！';
+          } else {
+            document.getElementById('test-result').textContent = 'API 调用失败。';
+          }
+        } catch (error) {
+          document.getElementById('test-result').textContent = '调用 API 时出错。';
+          console.error('Error calling DeepSeek API:', error);
+        }
+      } else {
+        alert('请设置您的 API Key。');
+      }
+    });
+
+    // Initialize display
+    updateApiKeyDisplay();
+  </script>
+</body>
+</html> 
