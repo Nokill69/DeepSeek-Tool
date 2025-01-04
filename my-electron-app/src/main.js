@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, Tray, Menu } = require('electron');
+const { app, BrowserWindow, ipcMain, Tray, Menu, globalShortcut } = require('electron');
 const path = require('path');
 const fs = require('fs');
 
@@ -102,6 +102,16 @@ app.whenReady().then(() => {
   tray.on('click', function() {
     mainWin.isVisible() ? mainWin.hide() : mainWin.show();
   });
+
+  // 注册全局快捷键
+  globalShortcut.register('CommandOrControl+Alt+A', () => {
+    mainWin.isVisible() ? mainWin.hide() : mainWin.show();
+  });
+});
+
+app.on('will-quit', () => {
+  // 注销所有快捷键
+  globalShortcut.unregisterAll();
 });
 
 app.on('window-all-closed', () => {
