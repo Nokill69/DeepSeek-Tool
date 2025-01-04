@@ -92,15 +92,35 @@
                 { role: 'system', content: '你是一个乐于助人的助手。' },
                 { role: 'user', content: userInput }
               ],
-              stream: false
+              stream: true // 启用流式输出
             })
           });
 
-          const data = await response.json();
-          const aiMessage = document.createElement('div');
-          aiMessage.textContent = `AI: ${data.choices[0].message.content}`;
+          const reader = response.body.getReader();
+          const decoder = new TextDecoder('utf-8');
+          let aiMessage = document.createElement('div');
+          aiMessage.textContent = 'AI: ';
           chatHistory.appendChild(aiMessage);
-          chatHistory.scrollTop = chatHistory.scrollHeight;
+
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            const chunk = decoder.decode(value, { stream: true });
+            const lines = chunk.split('\n').filter(line => line.trim() !== '');
+            for (const line of lines) {
+              if (line.startsWith('data: ')) {
+                const json = line.replace('data: ', '');
+                try {
+                  const parsed = JSON.parse(json);
+                  const content = parsed.choices[0].delta.content || '';
+                  aiMessage.textContent += content;
+                  chatHistory.scrollTop = chatHistory.scrollHeight;
+                } catch (e) {
+                  console.error('JSON 解析错误:', e);
+                }
+              }
+            }
+          }
         } catch (error) {
           console.error('调用 DeepSeek API 时出错:', error);
         }
