@@ -46,11 +46,6 @@ function createMainWindow() {
     mainWin.webContents.send('update-api-key', apiKey);
   });
 
-  mainWin.on('minimize', function (event) {
-    event.preventDefault();
-    mainWin.hide();
-  });
-
   mainWin.on('close', function (event) {
     if (!app.isQuiting) {
       event.preventDefault();
@@ -135,4 +130,8 @@ app.on('activate', () => {
   if (BrowserWindow.getAllWindows().length === 0) {
     createMainWindow();
   }
+});
+
+app.on('before-quit', () => {
+  app.isQuitting = true;
 }); 
