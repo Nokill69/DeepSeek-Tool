@@ -1237,18 +1237,25 @@
           body: JSON.stringify({
             model: 'deepseek-chat',
             messages: [{ role: 'system', content: '测试消息' }],
-            stream: false
+            stream: false,
+            max_tokens: 10  // 限制返回的 token 数量，加快测试速度
           })
         });
         
         if (response.ok) {
-          showMessage('API Key 测试成功！', 'success');
+          const data = await response.json();
+          if (data && data.choices && data.choices.length > 0) {
+            showMessage('API Key 测试成功！', 'success');
+          } else {
+            showMessage('API 响应格式异常，请重试。', 'error');
+          }
         } else {
-          showMessage('API Key 无效，请检查后重试。', 'error');
+          const errorData = await response.json().catch(() => ({}));
+          showMessage(errorData.error?.message || 'API Key 无效，请检查后重试。', 'error');
         }
       } catch (error) {
-        showMessage('测试过程中出现错误，请检查网络连接。', 'error');
         console.error('测试 API Key 时出错:', error);
+        showMessage('测试过程中出现错误，请检查网络连接。', 'error');
       }
     });
   </script>
