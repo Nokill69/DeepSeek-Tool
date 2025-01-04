@@ -14,9 +14,14 @@
       width: 100%;
       padding: 10px;
       font-size: 16px;
-      resize: none;
       box-sizing: border-box;
-      overflow: hidden;
+      margin-bottom: 10px;
+    }
+    #shortcut-select {
+      width: 100%;
+      padding: 10px;
+      font-size: 16px;
+      margin-bottom: 10px;
     }
     #test-result {
       margin-top: 10px;
@@ -29,9 +34,13 @@
   </style>
 </head>
 <body>
-  <h1>设置 API Key</h1>
+  <h1>设置 API Key 和快捷键</h1>
   <div id="api-key-area">
     <textarea id="api-key-input" placeholder="输入 DeepSeek API Key"></textarea>
+    <select id="shortcut-select">
+      <option value="CommandOrControl+Alt+A">Ctrl + Alt + A</option>
+      <option value="CommandOrControl+Alt+E">Ctrl + Alt + E</option>
+    </select>
     <button id="set-api-key-button">设置 API Key</button>
     <button id="test-api-button">测试 API</button>
     <div id="test-result"></div>
@@ -46,7 +55,6 @@
       apiKey = key;
       const input = document.getElementById('api-key-input');
       input.value = apiKey;
-      adjustHeight(input);
       updateApiKeyDisplay();
     });
 
@@ -54,15 +62,6 @@
       const displayElement = document.getElementById('api-key-display');
       displayElement.textContent = apiKey.trim() !== '' ? apiKey : '无';
     }
-
-    function adjustHeight(element) {
-      element.style.height = 'auto';
-      element.style.height = element.scrollHeight + 'px';
-    }
-
-    document.getElementById('api-key-input').addEventListener('input', function() {
-      adjustHeight(this);
-    });
 
     document.getElementById('set-api-key-button').addEventListener('click', function() {
       apiKey = document.getElementById('api-key-input').value;
@@ -73,6 +72,12 @@
         alert('请输入有效的 API Key。');
       }
       updateApiKeyDisplay();
+    });
+
+    document.getElementById('shortcut-select').addEventListener('change', function() {
+      const shortcut = this.value;
+      alert('快捷键设置成功！');
+      ipcRenderer.send('set-shortcut', shortcut);
     });
 
     document.getElementById('test-api-button').addEventListener('click', async function() {

@@ -6,6 +6,7 @@ const configPath = path.join(app.getPath('userData'), 'config.json');
 let tray = null;
 let mainWin = null;
 let apiKey = '';
+let currentShortcut = 'CommandOrControl+Alt+A'; // 默认快捷键
 
 // Load API Key from config file
 function loadApiKey() {
@@ -13,18 +14,19 @@ function loadApiKey() {
     const data = fs.readFileSync(configPath, 'utf-8');
     const config = JSON.parse(data);
     apiKey = config.apiKey || '';
+    currentShortcut = config.shortcut || currentShortcut;
   } catch (error) {
     console.error('Error loading API Key:', error);
   }
 }
 
-// Save API Key to config file
-function saveApiKey(key) {
+// Save API Key and shortcut to config file
+function saveConfig(key, shortcut) {
   try {
-    const config = { apiKey: key };
+    const config = { apiKey: key, shortcut: shortcut };
     fs.writeFileSync(configPath, JSON.stringify(config));
   } catch (error) {
-    console.error('Error saving API Key:', error);
+    console.error('Error saving config:', error);
   }
 }
 
@@ -78,8 +80,17 @@ function createMainWindow() {
 
     ipcMain.once('set-api-key', (event, key) => {
       apiKey = key;
-      saveApiKey(apiKey);
+      saveConfig(apiKey, currentShortcut);
       mainWin.webContents.send('update-api-key', apiKey);
+    });
+
+    ipcMain.on('set-shortcut', (event, shortcut) => {
+      globalShortcut.unregister(currentShortcut);
+      currentShortcut = shortcut;
+      globalShortcut.register(currentShortcut, () => {
+        mainWin.isVisible() ? mainWin.hide() : mainWin.show();
+      });
+      saveConfig(apiKey, currentShortcut);
     });
   });
 }
@@ -103,8 +114,8 @@ app.whenReady().then(() => {
     mainWin.isVisible() ? mainWin.hide() : mainWin.show();
   });
 
-  // 注册全局快捷键
-  globalShortcut.register('CommandOrControl+Alt+A', () => {
+  // 注册默认全局快捷键
+  globalShortcut.register(currentShortcut, () => {
     mainWin.isVisible() ? mainWin.hide() : mainWin.show();
   });
 });
