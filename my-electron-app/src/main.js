@@ -75,7 +75,7 @@ function createMainWindow() {
     apiKeyWin.loadFile(path.join(__dirname, 'api-key.html'));
 
     apiKeyWin.webContents.on('did-finish-load', () => {
-      apiKeyWin.webContents.send('load-api-key', apiKey);
+      apiKeyWin.webContents.send('load-api-key', apiKey, currentShortcut, configPath);
     });
 
     ipcMain.once('set-api-key', (event, key) => {

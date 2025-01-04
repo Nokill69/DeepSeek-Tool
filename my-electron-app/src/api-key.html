@@ -23,6 +23,11 @@
       font-size: 16px;
       margin-bottom: 10px;
     }
+    #config-path {
+      margin-top: 10px;
+      font-size: 14px;
+      color: #555;
+    }
     #test-result {
       margin-top: 10px;
       color: green;
@@ -34,28 +39,37 @@
   </style>
 </head>
 <body>
-  <h1>设置 API Key 和快捷键</h1>
+  <h1>设置界面</h1>
   <div id="api-key-area">
     <textarea id="api-key-input" placeholder="输入 DeepSeek API Key"></textarea>
+    <button id="set-api-key-button">设置 API Key</button>
+    <button id="test-api-button">测试 API</button>
     <select id="shortcut-select">
       <option value="CommandOrControl+Alt+A">Ctrl + Alt + A</option>
       <option value="CommandOrControl+Alt+E">Ctrl + Alt + E</option>
     </select>
-    <button id="set-api-key-button">设置 API Key</button>
-    <button id="test-api-button">测试 API</button>
     <div id="test-result"></div>
     <div id="current-api-key">当前 API Key: <span id="api-key-display">无</span></div>
+    <div id="config-path">配置文件路径: <span id="config-path-display"></span></div>
   </div>
 
   <script>
     const { ipcRenderer } = require('electron');
     let apiKey = '';
 
-    ipcRenderer.on('load-api-key', (event, key) => {
+    ipcRenderer.on('load-api-key', (event, key, shortcut, configPath) => {
       apiKey = key;
       const input = document.getElementById('api-key-input');
       input.value = apiKey;
       updateApiKeyDisplay();
+
+      // 设置下拉框的选中值
+      const shortcutSelect = document.getElementById('shortcut-select');
+      shortcutSelect.value = shortcut;
+
+      // 显示配置文件路径
+      const configPathDisplay = document.getElementById('config-path-display');
+      configPathDisplay.textContent = configPath;
     });
 
     function updateApiKeyDisplay() {
