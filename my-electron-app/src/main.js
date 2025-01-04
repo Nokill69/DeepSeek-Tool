@@ -1,9 +1,10 @@
-const { app, BrowserWindow, ipcMain } = require('electron');
+const { app, BrowserWindow, ipcMain, Tray, Menu } = require('electron');
 const path = require('path');
 const fs = require('fs');
 
 const configPath = path.join(app.getPath('userData'), 'config.json');
-
+let tray = null;
+let mainWin = null;
 let apiKey = '';
 
 // Load API Key from config file
@@ -28,7 +29,7 @@ function saveApiKey(key) {
 }
 
 function createMainWindow() {
-  const mainWin = new BrowserWindow({
+  mainWin = new BrowserWindow({
     width: 800,
     height: 600,
     webPreferences: {
@@ -41,6 +42,19 @@ function createMainWindow() {
 
   mainWin.webContents.on('did-finish-load', () => {
     mainWin.webContents.send('update-api-key', apiKey);
+  });
+
+  mainWin.on('minimize', function (event) {
+    event.preventDefault();
+    mainWin.hide();
+  });
+
+  mainWin.on('close', function (event) {
+    if (!app.isQuiting) {
+      event.preventDefault();
+      mainWin.hide();
+    }
+    return false;
   });
 
   ipcMain.on('open-api-key-window', () => {
@@ -73,6 +87,21 @@ function createMainWindow() {
 app.whenReady().then(() => {
   loadApiKey();
   createMainWindow();
+
+  tray = new Tray(path.join(__dirname, 'icon.png')); // 确保有一个图标文件
+  const contextMenu = Menu.buildFromTemplate([
+    { label: '显示', click: function () { mainWin.show(); } },
+    { label: '退出', click: function () {
+      app.isQuiting = true;
+      app.quit();
+    }}
+  ]);
+  tray.setToolTip('My Electron App');
+  tray.setContextMenu(contextMenu);
+
+  tray.on('click', function() {
+    mainWin.isVisible() ? mainWin.hide() : mainWin.show();
+  });
 });
 
 app.on('window-all-closed', () => {
