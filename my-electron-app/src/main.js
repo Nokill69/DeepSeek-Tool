@@ -61,8 +61,8 @@ function createMainWindow() {
 
   ipcMain.on('open-api-key-window', () => {
     const apiKeyWin = new BrowserWindow({
-      width: 500,
-      height: 300,
+      width: 600,
+      height: 400,
       resizable: true,
       webPreferences: {
         nodeIntegration: true,
