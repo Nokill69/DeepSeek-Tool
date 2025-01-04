@@ -1,12 +1,34 @@
-const { app, BrowserWindow, ipcMain, Tray, Menu, globalShortcut } = require('electron');
+const { app, BrowserWindow, ipcMain, Tray, Menu, globalShortcut, protocol } = require('electron');
 const path = require('path');
 const fs = require('fs');
+
+// 在开发环境中启用热重载
+if (process.env.NODE_ENV !== 'production') {
+  try {
+    require('electron-reloader')(module, {
+      debug: true,
+      watchRenderer: true,
+      ignore: [
+        'node_modules/**/*',
+        'package.json',
+        'package-lock.json'
+      ],
+      // 指定要监视的文件类型
+      pattern: [
+        '**/*.html',
+        '**/*.css',
+        '**/*.js'
+      ]
+    });
+  } catch (_) { console.log('Error'); }
+}
 
 const configPath = path.join(app.getPath('userData'), 'config.json');
 let tray = null;
 let mainWin = null;
 let apiKey = '';
 let currentShortcut = 'CommandOrControl+Alt+A'; // 默认快捷键
+let isDarkMode = false; // 添加暗色模式状态变量
 
 // Load API Key from config file
 function loadApiKey() {
@@ -36,6 +58,8 @@ function createMainWindow() {
     height: 800,
     minWidth: 800,
     minHeight: 600,
+    backgroundColor: '#ffffff',
+    frame: false,
     webPreferences: {
       nodeIntegration: true,
       contextIsolation: false
@@ -46,6 +70,11 @@ function createMainWindow() {
 
   mainWin.webContents.on('did-finish-load', () => {
     mainWin.webContents.send('update-api-key', apiKey);
+    mainWin.webContents.send('init-config', {
+      apiKey,
+      shortcut: currentShortcut,
+      configPath
+    });
   });
 
   mainWin.on('close', function (event) {
@@ -56,43 +85,45 @@ function createMainWindow() {
     return false;
   });
 
-  ipcMain.on('open-api-key-window', () => {
-    const apiKeyWin = new BrowserWindow({
-      width: 600,
-      height: 400,
-      resizable: true,
-      webPreferences: {
-        nodeIntegration: true,
-        contextIsolation: false
-      }
+  ipcMain.on('theme-update', (event, isDark) => {
+    isDarkMode = isDark;
+    mainWin.setBackgroundColor(isDark ? '#1a1a1a' : '#ffffff');
+    BrowserWindow.getAllWindows().forEach(window => {
+      window.webContents.send('theme-changed', isDark);
     });
+  });
 
-    apiKeyWin.setMenuBarVisibility(false);
-
-    apiKeyWin.loadFile(path.join(__dirname, 'api-key.html'));
-
-    apiKeyWin.webContents.on('did-finish-load', () => {
-      apiKeyWin.webContents.send('load-api-key', apiKey, currentShortcut, configPath);
-    });
-
-    ipcMain.once('set-api-key', (event, key) => {
-      apiKey = key;
-      saveConfig(apiKey, currentShortcut);
-      mainWin.webContents.send('update-api-key', apiKey);
-    });
-
-    ipcMain.on('set-shortcut', (event, shortcut) => {
-      globalShortcut.unregister(currentShortcut);
-      currentShortcut = shortcut;
-      globalShortcut.register(currentShortcut, () => {
-        mainWin.isVisible() ? mainWin.hide() : mainWin.show();
-      });
-      saveConfig(apiKey, currentShortcut);
-    });
+  // 添加窗口控制处理
+  ipcMain.on('window-control', (event, command) => {
+    switch (command) {
+      case 'minimize':
+        mainWin.minimize();
+        break;
+      case 'maximize':
+        if (mainWin.isMaximized()) {
+          mainWin.unmaximize();
+        } else {
+          mainWin.maximize();
+        }
+        break;
+      case 'close':
+        mainWin.hide();
+        break;
+    }
   });
 }
 
 app.whenReady().then(() => {
+  // 注册自定义协议
+  protocol.registerFileProtocol('app', (request, callback) => {
+    const url = request.url.replace('app://', '');
+    try {
+      return callback(path.join(__dirname, url));
+    } catch (error) {
+      console.error('Protocol error:', error);
+    }
+  });
+
   loadApiKey();
   createMainWindow();
 
@@ -144,4 +175,17 @@ ipcMain.on('theme-update', (event, isDark) => {
     BrowserWindow.getAllWindows().forEach(window => {
         window.webContents.send('theme-changed', isDark);
     });
+});
+
+// 添加配置保存处理
+ipcMain.on('save-config', (event, config) => {
+  apiKey = config.apiKey;
+  if (currentShortcut !== config.shortcut) {
+    globalShortcut.unregister(currentShortcut);
+    currentShortcut = config.shortcut;
+    globalShortcut.register(currentShortcut, () => {
+      mainWin.isVisible() ? mainWin.hide() : mainWin.show();
+    });
+  }
+  saveConfig(apiKey, currentShortcut);
 }); 

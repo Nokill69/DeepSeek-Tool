@@ -1,22 +1,88 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>我的 Electron 应用</title>
+  <title>DeepSeek 小助手</title>
   <link rel="stylesheet" href="../node_modules/highlight.js/styles/github.css" id="light-code-theme">
   <link rel="stylesheet" href="../node_modules/highlight.js/styles/github-dark.css" id="dark-code-theme">
   <style>
     body {
       font-family: Arial, sans-serif;
-      margin: 20px;
-      background-color: #f5f5f5;
-      height: calc(100vh - 40px);
+      margin: 0;
+      background: url('app://assets/background.png') no-repeat center center fixed;
+      background-size: cover;
+      height: 100vh;
       display: flex;
       flex-direction: column;
       overflow: hidden;
     }
+
+    /* 主要内容区域容器 */
+    .main-content {
+      padding: 20px;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    /* 顶部操作栏样式 */
+    .top-actions {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+      padding-top: 40px;  /* 为标题栏留出空间 */
+    }
+
+    .top-actions h1 {
+      margin: 0;
+      padding: 0;
+    }
+
+    .top-actions .right-controls {
+      display: flex;
+      align-items: center;
+      gap: 20px;  /* 增加间距 */
+      height: 32px;  /* 固定高度以确保对齐 */
+    }
+
+    .top-actions .button-group {
+      display: flex;
+      gap: 10px;
+      margin: 0;
+      height: 100%;  /* 继承父元素高度 */
+    }
+
+    /* 调整按钮高度以匹配容器 */
+    .top-actions .action-button {
+      height: 100%;
+      margin: 0;  /* 移除按钮的默认边距 */
+      padding: 0 16px;  /* 调整水平内边距 */
+      display: flex;
+      align-items: center;
+    }
+
+    /* 添加一个半透明的遮罩层，确保内容可读性 */
+    body::before {
+      content: '';
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: rgba(255, 255, 255, 0.65);  /* 降低白色遮罩的不透明度 */
+      z-index: -1;
+    }
+
+    /* 暗夜模式下的背景遮罩 */
+    body.dark-mode::before {
+      background-color: rgba(26, 26, 26, 0.75);  /* 降低深色遮罩的不透明度 */
+    }
+
     h1 {
       margin-top: 0;
       margin-bottom: 16px;
+      padding-top: 40px;  /* 为主题切换开关留出空间 */
     }
     .button-group {
       display: flex;
@@ -28,16 +94,15 @@
       border: 1px solid #e0e0e0;
       border-radius: 8px;
       overflow-y: auto;
-      margin-bottom: 16px;
+      margin: 0 0 16px 0;
       padding: 15px;
-      background-color: white;
+      background-color: rgba(255, 255, 255, 0.8);  /* 聊天框使用半透明背景 */
       box-shadow: 0 2px 6px rgba(0,0,0,0.1);
     }
     #input-area {
       display: flex;
       gap: 10px;
-      margin-bottom: 0;
-      padding-bottom: 8px;
+      margin-bottom: 20px;
     }
     #input-area input {
       flex: 1;
@@ -54,7 +119,6 @@
     #input-area button {
       padding: 12px 24px;
       font-size: 16px;
-      background-color: #2196F3;
       color: white;
       border: none;
       border-radius: 6px;
@@ -214,20 +278,18 @@
       margin-bottom: 20px;
     }
 
-    /* 添加主题切换开关样式 */
+    /* 修改主题切换开关包装器样式 */
     .theme-switch-wrapper {
-      position: absolute;
-      top: 20px;
-      right: 20px;
       display: flex;
       align-items: center;
       gap: 8px;
+      height: 100%;  /* 继承父元素高度 */
     }
 
     .theme-switch {
       position: relative;
-      width: 60px;
-      height: 30px;
+      width: 50px;  /* 稍微减小宽度 */
+      height: 26px;  /* 稍微减小高度 */
     }
 
     .theme-switch input {
@@ -251,10 +313,10 @@
     .slider:before {
       position: absolute;
       content: "";
-      height: 22px;
-      width: 22px;
-      left: 4px;
-      bottom: 4px;
+      height: 20px;  /* 调整滑块大小 */
+      width: 20px;
+      left: 3px;
+      bottom: 3px;
       background-color: white;
       transition: .4s;
       border-radius: 50%;
@@ -265,7 +327,7 @@
     }
 
     input:checked + .slider:before {
-      transform: translateX(30px);
+      transform: translateX(24px);
     }
 
     /* 暗夜模式样式 */
@@ -275,7 +337,7 @@
     }
 
     body.dark-mode #chat-history {
-      background-color: #2d2d2d;
+      background-color: rgba(45, 45, 45, 0.8);  /* 暗色模式下的半透明背景 */
       border-color: #404040;
       box-shadow: 0 2px 6px rgba(0,0,0,0.2);
     }
@@ -394,40 +456,489 @@
     body.dark-mode #dark-code-theme {
       display: block;
     }
+
+    /* 修改停止按钮样式 */
+    #input-area #stop-button {
+        background-color: #dc3545 !important;
+        display: none;
+        color: white;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    #input-area #stop-button:hover {
+        background-color: #c82333 !important;
+        transform: translateY(-1px);
+        box-shadow: 0 2px 4px rgba(220, 53, 69, 0.2);
+    }
+
+    #input-area #stop-button .material-icons {
+        font-size: 18px;
+    }
+
+    /* 暗夜模式下的停止按钮样式 */
+    body.dark-mode #input-area #stop-button {
+        background-color: #dc3545;
+    }
+
+    body.dark-mode #input-area #stop-button:hover {
+        background-color: #c82333;
+    }
+
+    /* 发送按钮禁用状态样式 */
+    #send-button:disabled {
+        background-color: #90caf9;
+        cursor: not-allowed;
+    }
+
+    /* 发送按钮样式 */
+    #input-area #send-button {
+      background-color: #2196F3;
+    }
+
+    #input-area #send-button:hover {
+      background-color: #1976D2;
+    }
+
+    /* 全局滚动条样式 */
+    ::-webkit-scrollbar {
+      width: 10px;
+      height: 10px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: #f1f1f1;
+      border-radius: 5px;
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: #c1c1c1;
+      border-radius: 5px;
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+      background: #a8a8a8;
+    }
+
+    /* 暗夜模式下的全局滚动条 */
+    body.dark-mode ::-webkit-scrollbar-track {
+      background: #2d2d2d;
+    }
+
+    body.dark-mode ::-webkit-scrollbar-thumb {
+      background: #555;
+    }
+
+    body.dark-mode ::-webkit-scrollbar-thumb:hover {
+      background: #666;
+    }
+
+    /* 标题栏样式 */
+    .titlebar {
+      height: 32px;
+      background: #ffffff;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0 10px;
+      -webkit-app-region: drag;
+      user-select: none;
+    }
+    
+    .titlebar-text {
+      font-size: 14px;
+      color: #333;
+    }
+    
+    .titlebar-controls {
+      display: flex;
+      -webkit-app-region: no-drag;
+    }
+    
+    .titlebar-button {
+      width: 46px;
+      height: 32px;
+      border: none;
+      background: transparent;
+      outline: none;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    
+    .titlebar-button:hover {
+      background: rgba(0,0,0,0.1);
+    }
+    
+    .titlebar-button .material-icons {
+      font-size: 18px;
+      color: #333;
+    }
+    
+    /* 暗夜模式下的标题栏样式 */
+    body.dark-mode .titlebar {
+      background: #1a1a1a;
+    }
+    
+    body.dark-mode .titlebar-text {
+      color: #fff;
+    }
+    
+    body.dark-mode .titlebar-button .material-icons {
+      color: #fff;
+    }
+    
+    body.dark-mode .titlebar-button:hover {
+      background: rgba(255,255,255,0.1);
+    }
+
+    /* 设置面板样式 */
+    .settings-panel {
+      position: absolute;
+      top: 0;
+      right: -400px;
+      width: 400px;
+      height: 100%;
+      background: white;
+      box-shadow: -2px 0 8px rgba(0,0,0,0.1);
+      transition: right 0.3s ease;
+      z-index: 1000;
+      display: flex;
+      flex-direction: column;
+      padding-top: 32px;  /* 为标题栏留出空间 */
+    }
+
+    .settings-panel.show {
+      right: 0;
+    }
+
+    .settings-content {
+      padding: 24px;
+      overflow-y: auto;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;  /* 减小整体间距 */
+    }
+
+    /* 设置面板中的标题样式 */
+    .settings-content h2 {
+      margin: 0;
+      color: #1976D2;
+      font-size: 24px;
+    }
+
+    /* 设置面板中的输入组样式 */
+    .settings-content .input-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;  /* 稍微减小输入组内部间距 */
+    }
+
+    .settings-content .input-group label {
+      font-weight: 500;
+      color: #555;
+    }
+
+    .settings-content .input-group input,
+    .settings-content .input-group select {
+      padding: 10px;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      font-size: 14px;
+      transition: all 0.2s ease;
+    }
+
+    .settings-content .input-group input:focus,
+    .settings-content .input-group select:focus {
+      outline: none;
+      border-color: #2196F3;
+      box-shadow: 0 0 0 2px rgba(33,150,243,0.1);
+    }
+
+    /* 设置面板中的按钮组样式 */
+    .settings-content .button-group {
+      display: flex;
+      gap: 12px;
+      margin-top: 12px;
+    }
+
+    .settings-content button {
+      padding: 10px 20px;
+      border: none;
+      border-radius: 6px;
+      font-size: 14px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .settings-content button.primary {
+      background-color: #2196F3;
+      color: white;
+    }
+
+    .settings-content button.primary:hover {
+      background-color: #1976D2;
+      transform: translateY(-1px);
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .settings-content button.secondary {
+      background-color: #f5f5f5;
+      color: #333;
+      border: 1px solid #ddd;
+    }
+
+    .settings-content button.secondary:hover {
+      background-color: #e0e0e0;
+    }
+
+    /* 配置路径区域样式 */
+    .settings-content .config-path {
+      margin-top: 0;  /* 移除自动边距 */
+      padding: 12px;
+      background-color: #f8f9fa;
+      border-radius: 6px;
+      font-size: 13px;
+      color: #666;
+      border: 1px solid #e0e0e0;
+    }
+
+    .settings-content .config-path code {
+      display: block;
+      margin: 8px 0;
+      font-family: 'Consolas', monospace;
+      color: #0d47a1;
+      word-break: break-all;
+    }
+
+    /* 暗夜模式下的设置面板样式 */
+    body.dark-mode .settings-panel {
+      background: #2d2d2d;
+      box-shadow: -2px 0 8px rgba(0,0,0,0.2);
+    }
+
+    body.dark-mode .settings-content h2 {
+      color: #90caf9;
+    }
+
+    body.dark-mode .settings-content .input-group label {
+      color: #e0e0e0;
+    }
+
+    body.dark-mode .settings-content .input-group input,
+    body.dark-mode .settings-content .input-group select {
+      background-color: #1e1e1e;
+      border-color: #404040;
+      color: #fff;
+    }
+
+    body.dark-mode .settings-content .input-group input:focus,
+    body.dark-mode .settings-content .input-group select:focus {
+      border-color: #64b5f6;
+      box-shadow: 0 0 0 2px rgba(33,150,243,0.2);
+    }
+
+    body.dark-mode .settings-content button.secondary {
+      background-color: #424242;
+      color: #fff;
+      border-color: #505050;
+    }
+
+    body.dark-mode .settings-content button.secondary:hover {
+      background-color: #505050;
+    }
+
+    body.dark-mode .settings-content .config-path {
+      background-color: #1e1e1e;
+      border-color: #404040;
+      color: #bdbdbd;
+    }
+
+    body.dark-mode .settings-content .config-path code {
+      color: #64b5f6;
+    }
+
+    /* 添加消息提示样式 */
+    .message {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      padding: 12px 24px;
+      border-radius: 6px;
+      font-size: 14px;
+      color: white;
+      opacity: 0;
+      transform: translateX(100%);
+      transition: all 0.3s ease;
+      z-index: 1000;
+    }
+
+    .message.show {
+      opacity: 1;
+      transform: translateX(0);
+    }
+
+    .message.success {
+      background-color: #4caf50;
+      box-shadow: 0 2px 8px rgba(76, 175, 80, 0.3);
+    }
+
+    .message.error {
+      background-color: #f44336;
+      box-shadow: 0 2px 8px rgba(244, 67, 54, 0.3);
+    }
+
+    /* 暗夜模式下的消息样式 */
+    body.dark-mode .message.success {
+      background-color: #2e7d32;
+    }
+
+    body.dark-mode .message.error {
+      background-color: #c62828;
+    }
+
+    /* 测试结果样式 */
+    .test-result {
+      margin-top: 12px;
+      padding: 12px;
+      border-radius: 6px;
+      font-size: 14px;
+      display: none;
+    }
+
+    .test-result.success {
+      background-color: #e8f5e9;
+      color: #2e7d32;
+      border: 1px solid #a5d6a7;
+    }
+
+    .test-result.error {
+      background-color: #ffebee;
+      color: #c62828;
+      border: 1px solid #ffcdd2;
+    }
+
+    /* 暗夜模式下的测试结果样式 */
+    body.dark-mode .test-result.success {
+      background-color: #1b5e20;
+      color: #fff;
+      border-color: #2e7d32;
+    }
+
+    body.dark-mode .test-result.error {
+      background-color: #b71c1c;
+      color: #fff;
+      border-color: #c62828;
+    }
   </style>
 </head>
 <body>
-  <!-- 添加主题切换开关 -->
-  <div class="theme-switch-wrapper">
-    <span class="theme-icon material-icons">light_mode</span>
-    <label class="theme-switch">
-      <input type="checkbox" id="theme-toggle">
-      <span class="slider"></span>
-    </label>
-    <span class="theme-icon material-icons">dark_mode</span>
+  <!-- 添加自定义标题栏 -->
+  <div class="titlebar">
+    <div class="titlebar-text">DeepSeek 小助手</div>
+    <div class="titlebar-controls">
+      <button class="titlebar-button" id="minimize-button">
+        <span class="material-icons">remove</span>
+      </button>
+      <button class="titlebar-button" id="maximize-button">
+        <span class="material-icons">crop_square</span>
+      </button>
+      <button class="titlebar-button" id="close-button">
+        <span class="material-icons">close</span>
+      </button>
+    </div>
   </div>
 
-  <h1>问问 DeepSeek</h1>
-  <div class="button-group">
-    <button id="settings-button" class="action-button secondary">设置</button>
-    <button id="clear-button" class="action-button danger" onclick="clearHistory()">清除历史</button>
+  <!-- 主要内容区域包装器 -->
+  <div class="main-content">
+    <!-- 顶部操作栏 -->
+    <div class="top-actions">
+      <h1>问问 DeepSeek</h1>
+      <div class="right-controls">
+        <div class="button-group">
+          <button id="toggle-settings" class="action-button secondary">设置</button>
+          <button id="clear-button" class="action-button danger" onclick="clearHistory()">清除历史</button>
+        </div>
+        <div class="theme-switch-wrapper">
+          <span class="theme-icon material-icons">light_mode</span>
+          <label class="theme-switch">
+            <input type="checkbox" id="theme-toggle">
+            <span class="slider"></span>
+          </label>
+          <span class="theme-icon material-icons">dark_mode</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 设置面板 -->
+    <div id="settings-panel" class="settings-panel">
+      <div class="settings-content">
+        <h2>设置</h2>
+        <!-- API Key 部分 -->
+        <div class="input-group">
+          <label for="api-key">API Key</label>
+          <input type="text" id="api-key" placeholder="请输入您的 DeepSeek API Key">
+          <div class="button-group">
+            <button id="test-button" class="secondary">测试 API Key</button>
+            <button id="save-button" class="primary">保存</button>
+          </div>
+        </div>
+        
+        <!-- 快捷键部分 -->
+        <div class="input-group">
+          <label for="shortcut">全局快捷键</label>
+          <select id="shortcut">
+            <option value="CommandOrControl+Alt+A">Ctrl + Alt + A</option>
+            <option value="CommandOrControl+Alt+E">Ctrl + Alt + E</option>
+          </select>
+        </div>
+
+        <div class="config-path">
+          配置文件路径：<code id="config-path"></code>
+          <div class="button-group">
+            <button id="open-path-button" class="secondary">打开文件路径</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="chat-history">
+      <!-- 聊天记录将在这里显示 -->
+    </div>
+    <div id="input-area">
+      <input type="text" id="user-input" placeholder="在此输入消息...">
+      <button id="send-button">发送</button>
+      <button id="stop-button">
+          <span class="material-icons">stop</span>
+          停止回答
+      </button>
+    </div>
   </div>
-  <div id="chat-history">
-    <!-- 聊天记录将在这里显示 -->
-  </div>
-  <div id="input-area">
-    <input type="text" id="user-input" placeholder="在此输入消息...">
-    <button id="send-button">发送</button>
-  </div>
+
+  <!-- 添加消息提示元素 -->
+  <div id="message" class="message"></div>
 
   <script>
-    const { ipcRenderer } = require('electron');
+    const { ipcRenderer, shell } = require('electron');
     const marked = require('marked');
     const hljs = require('highlight.js');
     let apiKey = '';
+    let currentShortcut = '';
+    let configPath = '';
     let messageHistory = [];
+    let controller = null;
 
-    // 配置 marked 使用 highlight.js
+    // 接收初始配置
+    ipcRenderer.on('init-config', (event, config) => {
+      apiKey = config.apiKey;
+      currentShortcut = config.shortcut;
+      configPath = config.configPath;
+    });
+
+    // 配置 marked，添加链接处理
     marked.setOptions({
       highlight: function(code, language) {
         if (language && hljs.getLanguage(language)) {
@@ -439,15 +950,19 @@
         }
         return code;  // 如果没有指定语言或出错，返回原始代码
       },
-      langPrefix: 'hljs language-'  // highlight.js 的 CSS 类前缀
+      langPrefix: 'hljs language-',
+      renderer: new marked.Renderer()
     });
+
+    // 重写链接渲染器
+    const renderer = new marked.Renderer();
+    renderer.link = function(href, title, text) {
+      return `<a href="${href}" title="${title || ''}" onclick="event.preventDefault(); shell.openExternal('${href}')">${text}</a>`;
+    };
+    marked.setOptions({ renderer });
 
     ipcRenderer.on('update-api-key', (event, key) => {
       apiKey = key;
-    });
-
-    document.getElementById('settings-button').addEventListener('click', () => {
-      ipcRenderer.send('open-api-key-window');
     });
 
     document.getElementById('user-input').addEventListener('keydown', function(event) {
@@ -458,26 +973,34 @@
     });
 
     document.getElementById('send-button').addEventListener('click', async function() {
+      const sendButton = document.getElementById('send-button');
+      const stopButton = document.getElementById('stop-button');
       const userInput = document.getElementById('user-input').value;
+
       if (userInput.trim() !== '') {
         if (apiKey.trim() === '') {
           alert('API Key 未设置。');
           return;
         }
 
-        // 添加用户消息到历史记录
-        messageHistory.push({ role: 'user', content: userInput });
-
-        const chatHistory = document.getElementById('chat-history');
-        const userMessage = document.createElement('div');
-        userMessage.className = 'user-message';
-        userMessage.textContent = `${userInput}`;
-        chatHistory.appendChild(userMessage);
-
-        document.getElementById('user-input').value = '';
-        chatHistory.scrollTop = chatHistory.scrollHeight;
-
         try {
+          // 显示停止按钮，禁用发送按钮
+          sendButton.disabled = true;
+          stopButton.style.display = 'inline-flex';  // 使用 inline-flex 以保持图标和文字的对齐
+
+          // 添加用户消息到历史记录
+          messageHistory.push({ role: 'user', content: userInput });
+
+          const chatHistory = document.getElementById('chat-history');
+          const userMessage = document.createElement('div');
+          userMessage.className = 'user-message';
+          userMessage.textContent = `${userInput}`;
+          chatHistory.appendChild(userMessage);
+
+          document.getElementById('user-input').value = '';
+          chatHistory.scrollTop = chatHistory.scrollHeight;
+
+          controller = new AbortController();  // 创建新的 AbortController
           const response = await fetch('https://api.deepseek.com/chat/completions', {
             method: 'POST',
             headers: {
@@ -488,12 +1011,13 @@
               model: 'deepseek-chat',
               messages: [
                 { role: 'system', content: '你是一个乐于助人的助手。你的回答要简洁、专业。' },
-                ...messageHistory // 包含所有历史消息
+                ...messageHistory
               ],
               stream: true,
-              temperature: 0.7, // 添加温度参数，控制回答的创造性
-              max_tokens: 2000  // 限制回答长度
-            })
+              temperature: 0.7,
+              max_tokens: 2000
+            }),
+            signal: controller.signal  // 添加 signal
           });
 
           const reader = response.body.getReader();
@@ -537,10 +1061,33 @@
           }
 
         } catch (error) {
-          console.error('调用 DeepSeek API 时出错:', error);
+          if (error.name === 'AbortError') {
+            console.log('请求被中止');
+            // 在中止时也添加一条提示信息
+            const abortMessage = document.createElement('div');
+            abortMessage.className = 'ai-message';
+            abortMessage.innerHTML = '<em>回答已停止</em>';
+            chatHistory.appendChild(abortMessage);
+          } else {
+            console.error('调用 DeepSeek API 时出错:', error);
+          }
+        } finally {
+          // 恢复按钮状态
+          sendButton.disabled = false;
+          stopButton.style.display = 'none';
+          controller = null;
         }
       } else {
         alert('请输入消息。');
+      }
+    });
+
+    // 修改停止按钮的事件处理
+    document.getElementById('stop-button').addEventListener('click', function() {
+      if (controller) {
+        controller.abort();  // 中止请求
+        this.style.display = 'none';  // 立即隐藏停止按钮
+        document.getElementById('send-button').disabled = false;  // 立即启用发送按钮
       }
     });
 
@@ -576,6 +1123,133 @@
       document.querySelectorAll('.ai-message pre code').forEach((block) => {
         hljs.highlightElement(block);
       });
+    });
+
+    // 页面加载时确保停止按钮是隐藏的
+    window.addEventListener('load', function() {
+      document.getElementById('stop-button').style.display = 'none';
+    });
+
+    // 页面加载时设置初始主题
+    window.addEventListener('load', function() {
+      const isDark = localStorage.getItem('theme') === 'dark';
+      if (isDark) {
+        ipcRenderer.send('theme-update', true);
+      }
+    });
+
+    // 添加窗口控制按钮的事件处理
+    document.getElementById('minimize-button').addEventListener('click', () => {
+      ipcRenderer.send('window-control', 'minimize');
+    });
+    
+    document.getElementById('maximize-button').addEventListener('click', () => {
+      ipcRenderer.send('window-control', 'maximize');
+    });
+    
+    document.getElementById('close-button').addEventListener('click', () => {
+      ipcRenderer.send('window-control', 'close');
+    });
+
+    // 设置面板的显示/隐藏
+    document.getElementById('toggle-settings').addEventListener('click', function() {
+      const settingsPanel = document.getElementById('settings-panel');
+      settingsPanel.classList.toggle('show');
+      // 加载设置
+      document.getElementById('api-key').value = apiKey;
+      document.getElementById('shortcut').value = currentShortcut;
+      document.getElementById('config-path').textContent = configPath;
+    });
+
+    // 点击设置面板外部时关闭面板
+    document.addEventListener('click', function(event) {
+      const settingsPanel = document.getElementById('settings-panel');
+      const toggleButton = document.getElementById('toggle-settings');
+      if (!settingsPanel.contains(event.target) && 
+          !toggleButton.contains(event.target) && 
+          settingsPanel.classList.contains('show')) {
+        settingsPanel.classList.remove('show');
+      }
+    });
+
+    // 保存 API Key
+    document.getElementById('save-button').addEventListener('click', function() {
+      const newApiKey = document.getElementById('api-key').value;
+      if (newApiKey.trim() !== '') {
+        apiKey = newApiKey;
+        ipcRenderer.send('save-config', { apiKey, shortcut: currentShortcut });
+        showMessage('API Key 设置成功！', 'success');
+      } else {
+        showMessage('请输入有效的 API Key。', 'error');
+      }
+    });
+
+    // 保存快捷键
+    document.getElementById('shortcut').addEventListener('change', function() {
+      currentShortcut = this.value;
+      ipcRenderer.send('save-config', { apiKey, shortcut: currentShortcut });
+      showMessage('快捷键设置成功！', 'success');
+    });
+
+    // 打开配置文件路径
+    document.getElementById('open-path-button').addEventListener('click', function() {
+      if (configPath) {
+        shell.showItemInFolder(configPath);
+        showMessage('已打开配置文件所在目录', 'success');
+      } else {
+        showMessage('无法获取配置文件路径', 'error');
+      }
+    });
+
+    // 添加显示消息的函数
+    function showMessage(text, type = 'success') {
+      const message = document.getElementById('message');
+      message.textContent = text;
+      message.className = `message ${type}`;
+      
+      // 强制重绘
+      message.offsetHeight;
+      
+      message.classList.add('show');
+      
+      // 3秒后自动隐藏
+      setTimeout(() => {
+        message.classList.remove('show');
+      }, 3000);
+    }
+
+    // 添加测试按钮的事件处理
+    document.getElementById('test-button').addEventListener('click', async function() {
+      const currentApiKey = document.getElementById('api-key').value;
+      
+      if (currentApiKey.trim() === '') {
+        showMessage('请输入 API Key 后再测试', 'error');
+        return;
+      }
+      
+      try {
+        const response = await fetch('https://api.deepseek.com/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${currentApiKey}`
+          },
+          body: JSON.stringify({
+            model: 'deepseek-chat',
+            messages: [{ role: 'system', content: '测试消息' }],
+            stream: false
+          })
+        });
+        
+        if (response.ok) {
+          showMessage('API Key 测试成功！', 'success');
+        } else {
+          showMessage('API Key 无效，请检查后重试。', 'error');
+        }
+      } catch (error) {
+        showMessage('测试过程中出现错误，请检查网络连接。', 'error');
+        console.error('测试 API Key 时出错:', error);
+      }
     });
   </script>
 </body>

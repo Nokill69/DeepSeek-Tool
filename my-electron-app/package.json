@@ -4,14 +4,17 @@
   "description": "",
   "main": "src/main.js",
   "scripts": {
-    "start": "electron .",
+    "start": "cross-env NODE_ENV=development electron .",
+    "prod": "cross-env NODE_ENV=production electron .",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "devDependencies": {
-    "electron": "^33.2.1"
+    "cross-env": "^7.0.3",
+    "electron": "^33.2.1",
+    "electron-reloader": "^1.2.3"
   },
   "dependencies": {
     "highlight.js": "^11.11.1",
