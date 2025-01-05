@@ -44,21 +44,21 @@
           "arch": ["x64"]
         }
       ],
-      "artifactName": {
-        "portable": "DeepSeek小工具便携版v${version}.${ext}",
-        "nsis": "DeepSeek小工具安装版v${version}.${ext}"
-      }
+      "artifactName": "${productName}v${version}-${arch}-${name}.${ext}"
     },
     "nsis": {
       "oneClick": false,
       "allowToChangeInstallationDirectory": true,
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
-      "installerIcon": "src/assets/installer.png",
-      "uninstallerIcon": "src/assets/uninstaller.png",
-      "installerHeaderIcon": "src/assets/installer.png"
+      "installerIcon": "src/assets/installer.ico",
+      "uninstallerIcon": "src/assets/uninstaller.ico",
+      "installerHeaderIcon": "src/assets/installer.ico",
+      "artifactName": "${productName}安装版v${version}.${ext}"
     },
-    "signAndEditExecutable": false
+    "portable": {
+      "artifactName": "${productName}便携版v${version}.${ext}"
+    }
   },
   "scripts": {
     "start": "cross-env NODE_ENV=development electron .",

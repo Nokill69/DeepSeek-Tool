@@ -179,6 +179,7 @@ function initChat() {
     const userInput = document.getElementById('user-input');
     const sendButton = document.getElementById('send-button');
     const stopButton = document.getElementById('stop-button');
+    const clearButton = document.getElementById('clear-button');
 
     userInput.addEventListener('keydown', function(event) {
         if (event.key === 'Enter') {
@@ -192,6 +193,9 @@ function initChat() {
     });
 
     stopButton.addEventListener('click', stopResponse);
+
+    // 添加清除历史按钮的事件监听
+    clearButton.addEventListener('click', clearHistory);
 
     // 确保停止按钮初始状态是隐藏的
     stopButton.style.display = 'none';

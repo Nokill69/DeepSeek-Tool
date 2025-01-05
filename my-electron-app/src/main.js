@@ -244,9 +244,16 @@ async function getAutoLaunchState() {
 // 设置自启动状态
 async function setAutoLaunchState(enable) {
     try {
-        return enable ? await createStartupShortcut() : await removeStartupShortcut();
+        const result = enable ? await createStartupShortcut() : await removeStartupShortcut();
+        if (!result) {
+            console.error('设置自启动失败: 操作返回 false');
+        }
+        return result;
     } catch (error) {
         console.error('设置自启动状态时出错:', error);
+        console.error('错误堆栈:', error.stack);
+        console.error('当前环境:', process.env.NODE_ENV);
+        console.error('当前执行路径:', process.execPath);
         return false;
     }
 }
@@ -254,13 +261,17 @@ async function setAutoLaunchState(enable) {
 // 创建快捷方式
 async function createStartupShortcut() {
     const startupFolder = getStartupFolderPath();
-    if (!startupFolder) return false;
+    if (!startupFolder) {
+        console.error('创建快捷方式失败: 无法获取启动文件夹路径');
+        return false;
+    }
 
     try {
         const shortcutPath = path.join(startupFolder, 'DeepSeek小助手.lnk');
+        console.log('正在创建快捷方式:', shortcutPath);
         
-        // 开发环境下使用 npm start 命令
         if (process.env.NODE_ENV === 'development') {
+            console.log('开发环境: 使用 npm start 命令');
             const projectPath = process.cwd();
             const batchContent = `
                 @echo off
@@ -301,14 +312,47 @@ async function createStartupShortcut() {
             // 删除临时文件
             await fsExtra.remove(vbsPath);
         } else {
-            // 生产环境保持原来的代码
-            const currentExePath = process.execPath;
+            console.log('生产环境: 使用可执行文件');
+            const exePath = process.execPath;
+            const exeDir = path.dirname(exePath);
+            
+            console.log('可执行文件路径:', exePath);
+            console.log('可执行文件目录:', exeDir);
+            
+            // 创建批处理文件
+            const batchPath = path.join(exeDir, 'start-app.bat');
+            console.log('批处理文件路径:', batchPath);
+            
+            const batchContent = `
+                @echo off
+                cd /d "%~dp0"
+                start "" "%~dp0${path.basename(exePath)}"
+            `;
+            
+            // 检查写入权限
+            try {
+                await fsExtra.access(exeDir, fsExtra.constants.W_OK);
+                console.log('目录写入权限检查通过');
+            } catch (error) {
+                console.error('目录写入权限检查失败:', error);
+                return false;
+            }
+            
+            try {
+                await fsExtra.writeFile(batchPath, batchContent);
+                console.log('批处理文件创建成功');
+            } catch (error) {
+                console.error('批处理文件创建失败:', error);
+                return false;
+            }
+            
             const wsScript = `
                 Set oWS = WScript.CreateObject("WScript.Shell")
                 Set oLink = oWS.CreateShortcut("${shortcutPath}")
-                oLink.TargetPath = "${currentExePath.replace(/\\/g, '\\\\')}"
-                oLink.WorkingDirectory = "${path.dirname(currentExePath).replace(/\\/g, '\\\\')}"
+                oLink.TargetPath = "${batchPath.replace(/\\/g, '\\\\')}"
+                oLink.WorkingDirectory = "${exeDir.replace(/\\/g, '\\\\')}"
                 oLink.Description = "DeepSeek小助手"
+                oLink.WindowStyle = 7
                 oLink.Save
             `;
             
@@ -325,6 +369,8 @@ async function createStartupShortcut() {
         return true;
     } catch (error) {
         console.error('创建快捷方式失败:', error);
+        console.error('错误堆栈:', error.stack);
+        console.error('当前工作目录:', process.cwd());
         return false;
     }
 }
@@ -332,20 +378,38 @@ async function createStartupShortcut() {
 // 修改移除快捷方式函数
 async function removeStartupShortcut() {
     const startupFolder = getStartupFolderPath();
-    if (!startupFolder) return false;
+    if (!startupFolder) {
+        console.error('移除快捷方式失败: 无法获取启动文件夹路径');
+        return false;
+    }
 
     try {
         const shortcutPath = path.join(startupFolder, 'DeepSeek小助手.lnk');
-        await fsExtra.remove(shortcutPath);
+        console.log('正在移除快捷方式:', shortcutPath);
         
-        // 开发环境下同时删除批处理文件
+        try {
+            await fsExtra.remove(shortcutPath);
+            console.log('快捷方式移除成功');
+        } catch (error) {
+            console.error('快捷方式移除失败:', error);
+            return false;
+        }
+        
+        // 删除批处理文件
         if (process.env.NODE_ENV === 'development') {
             const batchPath = path.join(process.cwd(), 'start-app.bat');
+            console.log('正在移除开发环境批处理文件:', batchPath);
+            await fsExtra.remove(batchPath);
+        } else {
+            const exeDir = path.dirname(process.execPath);
+            const batchPath = path.join(exeDir, 'start-app.bat');
+            console.log('正在移除生产环境批处理文件:', batchPath);
             await fsExtra.remove(batchPath);
         }
         return true;
     } catch (error) {
         console.error('移除快捷方式失败:', error);
+        console.error('错误堆栈:', error.stack);
         return false;
     }
 } 

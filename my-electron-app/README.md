@@ -29,8 +29,8 @@
 ### 构建注意事项
 - 确保 `src/assets` 目录下存在以下图标文件：
   - `app.png` - 主程序图标
-  - `installer.png` - 安装程序图标
-  - `uninstaller.png` - 卸载程序图标
+  - `installer.ico` - 安装程序图标
+  - `uninstaller.ico` - 卸载程序图标
   - `tray.ico` - 托盘图标
 - 检查 `package.json` 中的 `productName` 设置是否正确
 - 构建前确保所有依赖都已正确安装
