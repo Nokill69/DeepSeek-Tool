@@ -146,7 +146,7 @@ body.dark-mode .settings-content .config-path code {
 /* 消息提示样式 */
 .message {
     position: fixed;
-    top: 20px;
+    top: 50px;
     right: 20px;
     padding: 12px 24px;
     border-radius: 6px;

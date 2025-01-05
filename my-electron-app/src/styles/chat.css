@@ -113,4 +113,19 @@
   color: #abb2bf;
 }
 
+/* 错误消息样式 */
+.ai-message.error {
+    background-color: #ffebee;
+    border-left: 4px solid #ef5350;
+    color: #c62828;
+    font-style: italic;
+}
+
+/* 暗色模式下的错误消息样式 */
+body.dark-mode .ai-message.error {
+    background-color: rgba(198, 40, 40, 0.1);
+    border-left: 4px solid #ef5350;
+    color: #ef5350;
+}
+
 /* 其他聊天相关样式... */ 

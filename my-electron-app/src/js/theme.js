@@ -1,4 +1,5 @@
 const { ipcRenderer } = require('electron');
+const hljs = require('highlight.js');
 
 function initTheme() {
     const themeToggle = document.getElementById('theme-toggle');
@@ -27,6 +28,12 @@ function initTheme() {
             hljs.highlightElement(block);
         });
     });
+
+    // 页面加载时设置初始主题
+    const isDark = localStorage.getItem('theme') === 'dark';
+    if (isDark) {
+        ipcRenderer.send('theme-update', true);
+    }
 }
 
 module.exports = { initTheme }; 
