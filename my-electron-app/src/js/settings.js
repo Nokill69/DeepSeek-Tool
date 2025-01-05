@@ -8,6 +8,9 @@ let apiKey = '';
 let currentShortcut = '';
 let configPath = '';
 
+// 添加一个测试日志
+console.log('settings.js 已加载，ipcRenderer:', !!ipcRenderer);
+
 async function testApiKey(key) {
     if (key.trim() === '') {
         showMessage('请输入 API Key 后再测试', 'error');
@@ -73,13 +76,18 @@ function activateExplorerWindow(filePath) {
 
 async function initAutoStartToggle() {
     const autostartToggle = document.getElementById('autostart-toggle');
+    console.log('初始化自启动开关');
+    
     const { isPortable, enabled } = await ipcRenderer.invoke('get-autostart');
+    console.log('获取自启动状态:', { isPortable, enabled });
     
     // 设置开关状态
     autostartToggle.checked = enabled;
     
     autostartToggle.addEventListener('change', async function() {
+        console.log('切换自启动状态:', this.checked);
         const success = await ipcRenderer.invoke('set-autostart', this.checked);
+        console.log('设置结果:', success);
         if (success) {
             showMessage(this.checked ? '已启用开机自启' : '已禁用开机自启', 'success');
         } else {

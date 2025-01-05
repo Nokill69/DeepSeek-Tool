@@ -1,6 +1,6 @@
 {
   "name": "deepseek-assistant",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "DeepSeek AI Assistant",
   "main": "src/main.js",
   "author": "Your Name",
@@ -29,7 +29,9 @@
       {
         "from": "src/assets",
         "to": "assets",
-        "filter": ["**/*"]
+        "filter": [
+          "**/*"
+        ]
       }
     ],
     "win": {
@@ -37,11 +39,15 @@
       "target": [
         {
           "target": "nsis",
-          "arch": ["x64"]
+          "arch": [
+            "x64"
+          ]
         },
         {
           "target": "portable",
-          "arch": ["x64"]
+          "arch": [
+            "x64"
+          ]
         }
       ],
       "artifactName": "${productName}v${version}-${arch}-${name}.${ext}"
@@ -61,21 +67,23 @@
     }
   },
   "scripts": {
-    "start": "cross-env NODE_ENV=development electron .",
-    "prod": "cross-env NODE_ENV=production electron .",
+    "start": "chcp 65001 && cross-env NODE_ENV=development electron .",
+    "prod": "chcp 65001 && cross-env NODE_ENV=production electron .",
     "build": "cross-env ELECTRON_MIRROR=https://npmmirror.com/mirrors/electron/ electron-builder --win",
     "dist": "cross-env ELECTRON_MIRROR=https://npmmirror.com/mirrors/electron/ electron-builder --win --publish never"
   },
   "devDependencies": {
     "cross-env": "^7.0.3",
     "electron": "^33.2.1",
-    "electron-reloader": "^1.2.3",
-    "electron-builder": "^24.13.3"
+    "electron-builder": "^24.13.3",
+    "electron-reloader": "^1.2.3"
   },
   "dependencies": {
+    "auto-launch": "^5.0.5",
+    "fs-extra": "^11.2.0",
     "highlight.js": "^11.11.1",
     "marked": "^4.3.0",
-    "fs-extra": "^11.2.0"
+    "winreg": "^1.2.5"
   },
   "engines": {
     "node": ">=18.0.0"

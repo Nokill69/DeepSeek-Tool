@@ -2,6 +2,7 @@ const { app, BrowserWindow, ipcMain, Tray, Menu, globalShortcut, protocol, shell
 const path = require('path');
 const fs = require('fs');
 const fsExtra = require('fs-extra');
+const Registry = require('winreg');
 
 // 在开发环境中启用热重载
 if (process.env.NODE_ENV !== 'production') {
@@ -113,7 +114,9 @@ function createMainWindow() {
   });
 }
 
-app.whenReady().then(() => {
+app.whenReady().then(async () => {
+  console.log('应用准备就绪');
+  
   // 注册自定义协议
   protocol.registerFileProtocol('app', (request, callback) => {
     const url = request.url.replace('app://', '');
@@ -122,6 +125,20 @@ app.whenReady().then(() => {
     } catch (error) {
       console.error('Protocol error:', error);
     }
+  });
+
+  // 确保 IPC 处理器在这里注册
+  ipcMain.handle('get-autostart', async () => {
+    console.log('收到获取自启动状态请求');
+    return {
+      isPortable: false,
+      enabled: await getAutoLaunchState()
+    };
+  });
+
+  ipcMain.handle('set-autostart', async (event, enable) => {
+    console.log('收到设置自启动请求:', enable);
+    return await setAutoLaunchState(enable);
   });
 
   loadApiKey();
@@ -204,18 +221,6 @@ ipcMain.on('save-config', (event, config) => {
   saveConfig(apiKey, currentShortcut);
 });
 
-// 添加 IPC 处理
-ipcMain.handle('get-autostart', async () => {
-    return {
-        isPortable: false,
-        enabled: await getAutoLaunchState()
-    };
-});
-
-ipcMain.handle('set-autostart', async (event, enable) => {
-    return await setAutoLaunchState(enable);
-});
-
 // 获取启动文件夹路径
 function getStartupFolderPath() {
     if (process.platform === 'win32') {
@@ -230,186 +235,105 @@ function getStartupFolderPath() {
 
 // 获取自启动状态
 async function getAutoLaunchState() {
-    try {
-        const startupFolder = getStartupFolderPath();
-        if (!startupFolder) return false;
-        const shortcutPath = path.join(startupFolder, 'DeepSeek小助手.lnk');
-        return await fsExtra.pathExists(shortcutPath);
-    } catch (error) {
-        console.error('获取自启动状态时出错:', error);
-        return false;
+    if (process.platform === 'win32') {
+        try {
+            const regKey = new Registry({
+                hive: Registry.HKCU,
+                key: '\\Software\\Microsoft\\Windows\\CurrentVersion\\Run'
+            });
+
+            const exeDir = path.dirname(process.execPath);
+            const batchPath = path.join(exeDir, 'startup.bat');
+
+            return new Promise((resolve) => {
+                regKey.get('DeepSeekAssistant', (err, item) => {
+                    if (err) {
+                        console.log('获取注册表项失败:', err);
+                        resolve(false);
+                    } else {
+                        // 检查注册表值是否指向正确的批处理文件
+                        const registeredPath = item.value.replace(/"/g, '');
+                        console.log('当前注册表项:', registeredPath);
+                        console.log('期望的批处理路径:', batchPath);
+                        resolve(registeredPath === batchPath);
+                    }
+                });
+            });
+        } catch (error) {
+            console.error('检查自启动状态时出错:', error);
+            return false;
+        }
     }
+    return false;
 }
 
 // 设置自启动状态
 async function setAutoLaunchState(enable) {
-    try {
-        const result = enable ? await createStartupShortcut() : await removeStartupShortcut();
-        if (!result) {
-            console.error('设置自启动失败: 操作返回 false');
-        }
-        return result;
-    } catch (error) {
-        console.error('设置自启动状态时出错:', error);
-        console.error('错误堆栈:', error.stack);
-        console.error('当前环境:', process.env.NODE_ENV);
-        console.error('当前执行路径:', process.execPath);
-        return false;
-    }
-}
+    console.log('开始设置自启动状态:', enable);
+    console.log('当前环境:', process.env.NODE_ENV);
+    console.log('当前执行路径:', process.execPath);
 
-// 创建快捷方式
-async function createStartupShortcut() {
-    const startupFolder = getStartupFolderPath();
-    if (!startupFolder) {
-        console.error('创建快捷方式失败: 无法获取启动文件夹路径');
-        return false;
-    }
-
-    try {
-        const shortcutPath = path.join(startupFolder, 'DeepSeek小助手.lnk');
-        console.log('正在创建快捷方式:', shortcutPath);
-        
-        if (process.env.NODE_ENV === 'development') {
-            console.log('开发环境: 使用 npm start 命令');
-            const projectPath = process.cwd();
-            const batchContent = `
-                @echo off
-                cd /d "${projectPath}"
-                start /min cmd /c "npm start"
-            `;
-            const batchPath = path.join(projectPath, 'start-app.bat');
-            
-            // 创建批处理文件
-            await fsExtra.writeFile(batchPath, batchContent);
-            
-            const wsScript = `
-                Set oWS = WScript.CreateObject("WScript.Shell")
-                Set oLink = oWS.CreateShortcut("${shortcutPath}")
-                oLink.TargetPath = "${batchPath.replace(/\\/g, '\\\\')}"
-                oLink.WorkingDirectory = "${projectPath.replace(/\\/g, '\\\\')}"
-                oLink.Description = "DeepSeek小助手 (开发版)"
-                oLink.WindowStyle = 7
-                oLink.Save
-            `;
-            
-            // 创建临时 vbs 文件
-            const vbsPath = path.join(app.getPath('temp'), 'create-shortcut.vbs');
-            await fsExtra.writeFile(vbsPath, wsScript);
-            
-            // 执行 vbs 脚本
-            await new Promise((resolve, reject) => {
-                const { exec } = require('child_process');
-                exec(`cscript //nologo "${vbsPath}"`, (error) => {
-                    if (error) {
-                        reject(error);
-                    } else {
-                        resolve();
-                    }
-                });
+    if (process.platform === 'win32') {
+        try {
+            const regKey = new Registry({
+                hive: Registry.HKCU,
+                key: '\\Software\\Microsoft\\Windows\\CurrentVersion\\Run'
             });
-            
-            // 删除临时文件
-            await fsExtra.remove(vbsPath);
-        } else {
-            console.log('生产环境: 使用可执行文件');
+
             const exePath = process.execPath;
             const exeDir = path.dirname(exePath);
+            const keyName = 'DeepSeekAssistant';
             
-            console.log('可执行文件路径:', exePath);
-            console.log('可执行文件目录:', exeDir);
-            
-            // 创建批处理文件
-            const batchPath = path.join(exeDir, 'start-app.bat');
-            console.log('批处理文件路径:', batchPath);
-            
+            // 创建启动批处理文件
+            const batchPath = path.join(exeDir, 'startup.bat');
             const batchContent = `
                 @echo off
                 cd /d "%~dp0"
                 start "" "%~dp0${path.basename(exePath)}"
-            `;
-            
-            // 检查写入权限
-            try {
-                await fsExtra.access(exeDir, fsExtra.constants.W_OK);
-                console.log('目录写入权限检查通过');
-            } catch (error) {
-                console.error('目录写入权限检查失败:', error);
-                return false;
-            }
-            
-            try {
-                await fsExtra.writeFile(batchPath, batchContent);
-                console.log('批处理文件创建成功');
-            } catch (error) {
-                console.error('批处理文件创建失败:', error);
-                return false;
-            }
-            
-            const wsScript = `
-                Set oWS = WScript.CreateObject("WScript.Shell")
-                Set oLink = oWS.CreateShortcut("${shortcutPath}")
-                oLink.TargetPath = "${batchPath.replace(/\\/g, '\\\\')}"
-                oLink.WorkingDirectory = "${exeDir.replace(/\\/g, '\\\\')}"
-                oLink.Description = "DeepSeek小助手"
-                oLink.WindowStyle = 7
-                oLink.Save
-            `;
-            
-            const vbsPath = path.join(app.getPath('temp'), 'create-shortcut.vbs');
-            await fsExtra.writeFile(vbsPath, wsScript);
-            await new Promise((resolve, reject) => {
-                const { exec } = require('child_process');
-                exec(`cscript //nologo "${vbsPath}"`, (error) => {
-                    error ? reject(error) : resolve();
-                });
+            `.trim();
+
+            return new Promise((resolve) => {
+                if (enable) {
+                    // 先写入批处理文件
+                    fs.writeFileSync(batchPath, batchContent, 'utf-8');
+                    console.log('批处理文件已创建:', batchPath);
+
+                    // 将批处理文件路径添加到注册表
+                    regKey.set(keyName, Registry.REG_SZ, `"${batchPath}"`, (err) => {
+                        if (err) {
+                            console.error('添加注册表项失败:', err);
+                            resolve(false);
+                        } else {
+                            console.log('注册表项添加成功');
+                            resolve(true);
+                        }
+                    });
+                } else {
+                    // 移除注册表项
+                    regKey.remove(keyName, (err) => {
+                        if (err) {
+                            console.error('移除注册表项失败:', err);
+                            resolve(false);
+                        } else {
+                            // 删除批处理文件
+                            try {
+                                if (fs.existsSync(batchPath)) {
+                                    fs.unlinkSync(batchPath);
+                                }
+                                console.log('注册表项和批处理文件已移除');
+                                resolve(true);
+                            } catch (error) {
+                                console.error('删除批处理文件失败:', error);
+                                resolve(false);
+                            }
+                        }
+                    });
+                }
             });
-            await fsExtra.remove(vbsPath);
-        }
-        return true;
-    } catch (error) {
-        console.error('创建快捷方式失败:', error);
-        console.error('错误堆栈:', error.stack);
-        console.error('当前工作目录:', process.cwd());
-        return false;
-    }
-}
-
-// 修改移除快捷方式函数
-async function removeStartupShortcut() {
-    const startupFolder = getStartupFolderPath();
-    if (!startupFolder) {
-        console.error('移除快捷方式失败: 无法获取启动文件夹路径');
-        return false;
-    }
-
-    try {
-        const shortcutPath = path.join(startupFolder, 'DeepSeek小助手.lnk');
-        console.log('正在移除快捷方式:', shortcutPath);
-        
-        try {
-            await fsExtra.remove(shortcutPath);
-            console.log('快捷方式移除成功');
         } catch (error) {
-            console.error('快捷方式移除失败:', error);
+            console.error('操作注册表时出错:', error);
             return false;
         }
-        
-        // 删除批处理文件
-        if (process.env.NODE_ENV === 'development') {
-            const batchPath = path.join(process.cwd(), 'start-app.bat');
-            console.log('正在移除开发环境批处理文件:', batchPath);
-            await fsExtra.remove(batchPath);
-        } else {
-            const exeDir = path.dirname(process.execPath);
-            const batchPath = path.join(exeDir, 'start-app.bat');
-            console.log('正在移除生产环境批处理文件:', batchPath);
-            await fsExtra.remove(batchPath);
-        }
-        return true;
-    } catch (error) {
-        console.error('移除快捷方式失败:', error);
-        console.error('错误堆栈:', error.stack);
-        return false;
     }
+    return false;
 } 
