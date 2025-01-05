@@ -1,23 +1,69 @@
 {
-  "name": "my-electron-app",
+  "name": "deepseek-assistant",
   "version": "1.0.0",
-  "description": "",
+  "description": "DeepSeek AI Assistant",
   "main": "src/main.js",
+  "author": "Your Name",
+  "build": {
+    "appId": "com.yourname.deepseek-assistant",
+    "productName": "DeepSeek Assistant",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "src/**/*",
+      "!src/**/*.{md,txt}",
+      "!**/node_modules/*/{CHANGELOG.md,README.md,README,readme.md,readme}",
+      "!**/node_modules/*/{test,__tests__,tests,powered-test,example,examples}",
+      "!**/node_modules/*.d.ts",
+      "!**/node_modules/.bin",
+      "!**/*.{iml,o,hprof,orig,pyc,pyo,rbc,swp,csproj,sln,xproj}",
+      "!.editorconfig",
+      "!**/._*",
+      "!**/{.DS_Store,.git,.hg,.svn,CVS,RCS,SCCS,.gitignore,.gitattributes}",
+      "!**/{__pycache__,thumbs.db,.flowconfig,.idea,.vs,.nyc_output}",
+      "!**/{appveyor.yml,.travis.yml,circle.yml}",
+      "!**/{npm-debug.log,yarn.lock,.yarn-integrity,.yarn-metadata.json}"
+    ],
+    "win": {
+      "icon": "src/assets/icon.ico",
+      "target": [
+        {
+          "target": "nsis",
+          "arch": ["x64"]
+        },
+        {
+          "target": "portable",
+          "arch": ["x64"]
+        }
+      ],
+      "sign": null
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true
+    },
+    "signAndEditExecutable": false
+  },
   "scripts": {
     "start": "cross-env NODE_ENV=development electron .",
     "prod": "cross-env NODE_ENV=production electron .",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "build": "cross-env ELECTRON_MIRROR=https://npmmirror.com/mirrors/electron/ electron-builder --win",
+    "dist": "cross-env ELECTRON_MIRROR=https://npmmirror.com/mirrors/electron/ electron-builder --win --publish never"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
   "devDependencies": {
     "cross-env": "^7.0.3",
     "electron": "^33.2.1",
-    "electron-reloader": "^1.2.3"
+    "electron-reloader": "^1.2.3",
+    "electron-builder": "^24.13.3"
   },
   "dependencies": {
     "highlight.js": "^11.11.1",
     "marked": "^4.3.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
   }
 }
