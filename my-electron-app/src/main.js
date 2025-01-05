@@ -53,12 +53,13 @@ function saveConfig(key, shortcut) {
 
 function createMainWindow() {
   mainWin = new BrowserWindow({
-    width: 1000,
+    width: 1200,
     height: 800,
     minWidth: 800,
     minHeight: 600,
     backgroundColor: '#ffffff',
     frame: false,
+    icon: path.join(__dirname, 'assets', 'app.png'),
     webPreferences: {
       nodeIntegration: true,
       contextIsolation: false
