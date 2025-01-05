@@ -1,0 +1,246 @@
+/* 基础样式 */
+body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    background: url('app://assets/background.png') no-repeat center center fixed;
+    background-size: cover;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+/* 添加背景遮罩 */
+body::before {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(255, 255, 255, 0.65);
+    z-index: -1;
+}
+
+/* 主要内容区域容器 */
+.main-content {
+    padding: 20px;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+/* 顶部操作栏样式 */
+.top-actions {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    padding-top: 40px;
+}
+
+.top-actions h1 {
+    margin: 0;
+    padding: 0;
+}
+
+.top-actions .right-controls {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    height: 32px;
+}
+
+.top-actions .button-group {
+    display: flex;
+    gap: 10px;
+    margin: 0;
+    height: 100%;
+}
+
+/* 统一按钮样式 */
+.action-button {
+    padding: 8px 16px;
+    font-size: 14px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    background-color: #2196F3;
+    color: white;
+    margin-right: 10px;
+}
+
+.action-button:hover {
+    background-color: #1976D2;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.action-button.secondary {
+    background-color: #757575;
+}
+
+.action-button.secondary:hover {
+    background-color: #616161;
+}
+
+.action-button.danger {
+    background-color: #dc3545;
+}
+
+.action-button.danger:hover {
+    background-color: #c82333;
+}
+
+/* 主题切换开关样式 */
+.theme-switch-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    height: 100%;
+}
+
+.theme-switch {
+    position: relative;
+    width: 50px;
+    height: 26px;
+}
+
+.theme-switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: #ccc;
+    transition: .4s;
+    border-radius: 34px;
+}
+
+.slider:before {
+    position: absolute;
+    content: "";
+    height: 20px;
+    width: 20px;
+    left: 3px;
+    bottom: 3px;
+    background-color: white;
+    transition: .4s;
+    border-radius: 50%;
+}
+
+input:checked + .slider {
+    background-color: #2196F3;
+}
+
+input:checked + .slider:before {
+    transform: translateX(24px);
+}
+
+/* 标题栏样式 */
+.titlebar {
+    height: 32px;
+    background: #ffffff;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 10px;
+    -webkit-app-region: drag;
+    user-select: none;
+}
+
+/* Material Icons 字体 */
+@font-face {
+    font-family: 'Material Icons';
+    font-style: normal;
+    font-weight: 400;
+    src: url(https://fonts.gstatic.com/s/materialicons/v140/flUhRq6tzZclQEJ-Vdg-IuiaDsNc.woff2) format('woff2');
+}
+
+.material-icons {
+    font-family: 'Material Icons';
+    font-weight: normal;
+    font-style: normal;
+    font-size: 20px;
+    line-height: 1;
+    letter-spacing: normal;
+    text-transform: none;
+    display: inline-block;
+    white-space: nowrap;
+    word-wrap: normal;
+    direction: ltr;
+    -webkit-font-smoothing: antialiased;
+}
+
+/* 全局滚动条样式 */
+::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+}
+
+::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 5px;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 5px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #a8a8a8;
+}
+
+/* 标题栏按钮样式 */
+.titlebar-button {
+    width: 46px;
+    height: 32px;
+    border: none;
+    background: transparent;
+    outline: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    -webkit-app-region: no-drag;  /* 确保按钮可以点击 */
+}
+
+.titlebar-button:hover {
+    background: rgba(0,0,0,0.1);
+}
+
+.titlebar-button .material-icons {
+    font-size: 18px;
+    color: #333;
+}
+
+/* 暗色模式下的标题栏按钮样式 */
+body.dark-mode .titlebar-button:hover {
+    background: rgba(255,255,255,0.1);
+}
+
+body.dark-mode .titlebar-button .material-icons {
+    color: #fff;
+}
+
+/* 标题栏文本样式 */
+.titlebar-text {
+    font-size: 14px;
+    color: #333;
+}
+
+/* 标题栏控制按钮容器 */
+.titlebar-controls {
+    display: flex;
+    -webkit-app-region: no-drag;  /* 确保控制区域可以点击 */
+} 

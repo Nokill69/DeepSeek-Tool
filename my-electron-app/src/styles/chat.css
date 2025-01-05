@@ -1,0 +1,116 @@
+/* 聊天历史区域样式 */
+#chat-history {
+  flex: 1;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  overflow-y: auto;
+  margin: 0 0 16px 0;
+  padding: 15px;
+  background-color: rgba(255, 255, 255, 0.8);
+  box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+}
+
+/* 输入区域样式 */
+#input-area {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+#input-area input {
+  flex: 1;
+  padding: 12px;
+  font-size: 16px;
+  border: 1px solid #e0e0e0;
+  border-radius: 6px;
+  outline: none;
+}
+
+#input-area input:focus {
+  border-color: #2196F3;
+  box-shadow: 0 0 0 2px rgba(33,150,243,0.1);
+}
+
+#input-area button {
+  padding: 12px 24px;
+  font-size: 16px;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+/* 发送按钮样式 */
+#input-area #send-button {
+  background-color: #2196F3;
+}
+
+#input-area #send-button:hover {
+  background-color: #1976D2;
+}
+
+/* 停止按钮样式 */
+#input-area #stop-button {
+  background-color: #dc3545 !important;
+  display: none;
+  color: white;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+#input-area #stop-button:hover {
+  background-color: #c82333 !important;
+}
+
+/* 消息样式 */
+.user-message {
+  background-color: #E3F2FD;
+  padding: 12px;
+  margin: 8px 0;
+  border-radius: 12px;
+  max-width: 80%;
+  margin-left: auto;
+  color: #1565C0;
+}
+
+.ai-message {
+  background-color: white;
+  padding: 12px;
+  margin: 8px 0;
+  border-left: 4px solid #4CAF50;
+}
+
+/* Markdown 样式 */
+.ai-message h1, .ai-message h2, .ai-message h3 {
+  margin-top: 16px;
+  margin-bottom: 8px;
+}
+
+.ai-message code {
+  background-color: #f8f9fa;
+  padding: 3px 6px;
+  border-radius: 4px;
+  font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+  font-size: 0.9em;
+  color: #e83e8c;
+  border: 1px solid #eee;
+}
+
+.ai-message pre {
+  background-color: #282c34;
+  padding: 16px;
+  border-radius: 8px;
+  overflow-x: auto;
+  margin: 12px 0;
+}
+
+.ai-message pre code {
+  background-color: transparent;
+  padding: 0;
+  border: none;
+  color: #abb2bf;
+}
+
+/* 其他聊天相关样式... */ 
