@@ -71,6 +71,24 @@ function activateExplorerWindow(filePath) {
     // Linux 平台可能需要根据具体的桌面环境来实现
 }
 
+async function initAutoStartToggle() {
+    const autostartToggle = document.getElementById('autostart-toggle');
+    const { isPortable, enabled } = await ipcRenderer.invoke('get-autostart');
+    
+    // 设置开关状态
+    autostartToggle.checked = enabled;
+    
+    autostartToggle.addEventListener('change', async function() {
+        const success = await ipcRenderer.invoke('set-autostart', this.checked);
+        if (success) {
+            showMessage(this.checked ? '已启用开机自启' : '已禁用开机自启', 'success');
+        } else {
+            showMessage('设置开机自启失败', 'error');
+            this.checked = !this.checked; // 恢复开关状态
+        }
+    });
+}
+
 function initSettings() {
     const settingsPanel = document.getElementById('settings-panel');
     const toggleButton = document.getElementById('toggle-settings');
@@ -138,6 +156,9 @@ function initSettings() {
     document.getElementById('test-button').addEventListener('click', function() {
         testApiKey(document.getElementById('api-key').value);
     });
+
+    // 初始化自启动开关
+    initAutoStartToggle();
 }
 
 module.exports = { initSettings }; 

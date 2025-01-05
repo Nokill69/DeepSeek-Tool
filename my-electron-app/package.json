@@ -1,14 +1,14 @@
 {
   "name": "deepseek-assistant",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "DeepSeek AI Assistant",
   "main": "src/main.js",
   "author": "Your Name",
   "build": {
     "appId": "com.yourname.deepseek-assistant",
-    "productName": "DeepSeek Assistant",
+    "productName": "DeepSeek 小工具",
     "directories": {
-      "output": "dist"
+      "output": "dist/v${version}"
     },
     "files": [
       "src/**/*",
@@ -25,8 +25,15 @@
       "!**/{appveyor.yml,.travis.yml,circle.yml}",
       "!**/{npm-debug.log,yarn.lock,.yarn-integrity,.yarn-metadata.json}"
     ],
+    "extraResources": [
+      {
+        "from": "src/assets",
+        "to": "assets",
+        "filter": ["**/*"]
+      }
+    ],
     "win": {
-      "icon": "src/assets/icon.ico",
+      "icon": "src/assets/app.png",
       "target": [
         {
           "target": "nsis",
@@ -37,13 +44,19 @@
           "arch": ["x64"]
         }
       ],
-      "sign": null
+      "artifactName": {
+        "portable": "DeepSeek小工具便携版v${version}.${ext}",
+        "nsis": "DeepSeek小工具安装版v${version}.${ext}"
+      }
     },
     "nsis": {
       "oneClick": false,
       "allowToChangeInstallationDirectory": true,
       "createDesktopShortcut": true,
-      "createStartMenuShortcut": true
+      "createStartMenuShortcut": true,
+      "installerIcon": "src/assets/installer.png",
+      "uninstallerIcon": "src/assets/uninstaller.png",
+      "installerHeaderIcon": "src/assets/installer.png"
     },
     "signAndEditExecutable": false
   },
@@ -61,7 +74,8 @@
   },
   "dependencies": {
     "highlight.js": "^11.11.1",
-    "marked": "^4.3.0"
+    "marked": "^4.3.0",
+    "fs-extra": "^11.2.0"
   },
   "engines": {
     "node": ">=18.0.0"

@@ -260,4 +260,22 @@ body.dark-mode .test-result.error {
     background-color: #b71c1c;
     color: #fff;
     border-color: #c62828;
+}
+
+/* 开关标签样式 */
+.switch-label {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+}
+
+/* 禁用状态样式 */
+.theme-switch input:disabled + .slider {
+    background-color: #ccc;
+    cursor: not-allowed;
+}
+
+body.dark-mode .theme-switch input:disabled + .slider {
+    background-color: #444;
 } 

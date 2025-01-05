@@ -243,4 +243,15 @@ body.dark-mode .titlebar-button .material-icons {
 .titlebar-controls {
     display: flex;
     -webkit-app-region: no-drag;  /* 确保控制区域可以点击 */
+}
+
+/* 暗夜模式下的危险按钮样式 */
+body.dark-mode .action-button.danger {
+    background-color: #dc3545;  /* 保持红色不变 */
+}
+
+body.dark-mode .action-button.danger:hover {
+    background-color: #c82333;  /* 保持红色不变 */
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(220, 53, 69, 0.3);  /* 添加红色阴影 */
 } 
