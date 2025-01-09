@@ -246,6 +246,11 @@ function initChat() {
     stopButton.style.display = 'none';
 }
 
+// 修改透明度控制的代码
+function updateOpacity(value) {
+    document.documentElement.style.setProperty('--opacity', value);
+}
+
 module.exports = {
     initChat,
     setApiKey,

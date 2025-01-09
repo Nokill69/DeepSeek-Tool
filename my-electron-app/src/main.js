@@ -88,6 +88,8 @@ function createMainWindow() {
     backgroundColor: '#ffffff',
     frame: false,
     icon: path.join(__dirname, 'assets', 'app.png'),
+    titleBarStyle: 'hidden',
+    trafficLightPosition: { x: 10, y: 10 },
     webPreferences: {
       nodeIntegration: true,
       contextIsolation: false
