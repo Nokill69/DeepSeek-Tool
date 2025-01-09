@@ -165,8 +165,9 @@ input:checked + .slider:before {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    background: transparent;
+    background: transparent !important;
     z-index: 1000;
+    pointer-events: none;
 }
 
 /* 可拖动区域 */
@@ -185,13 +186,16 @@ input:checked + .slider:before {
     margin-left: 10px;
     font-size: 14px;
     color: #333;
+    user-select: none;
+    pointer-events: auto;
 }
 
 /* 控制按钮容器 */
 .titlebar-controls {
     display: flex;
     -webkit-app-region: no-drag;
-    margin-left: auto; /* 将按钮推到右边 */
+    margin-left: auto;
+    pointer-events: auto;
 }
 
 /* 标题栏按钮样式 */
@@ -206,38 +210,57 @@ input:checked + .slider:before {
     align-items: center;
     justify-content: center;
     -webkit-app-region: no-drag;
+    transition: background-color 0.2s ease;
 }
 
+/* 普通按钮悬停效果 */
 .titlebar-button:hover {
-    background: rgba(0,0,0,0.1);
+    background: rgba(0, 0, 0, 0.1) !important;
 }
 
+/* 关闭按钮特殊处理 */
+.titlebar-button#close-button:hover {
+    background: rgba(232, 17, 35, 0.9) !important;
+}
+
+.titlebar-button#close-button:hover .material-icons {
+    color: #ffffff;
+}
+
+/* 最大化/最小化按钮悬停效果 */
+.titlebar-button#minimize-button:hover,
+.titlebar-button#maximize-button:hover {
+    background: rgba(0, 0, 0, 0.1);
+}
+
+/* 暗色模式下的按钮样式 */
+body.dark-mode .titlebar-button:hover {
+    background: rgba(255, 255, 255, 0.1) !important;
+}
+
+body.dark-mode .titlebar-button#close-button:hover {
+    background: rgba(232, 17, 35, 0.9) !important;
+}
+
+body.dark-mode .titlebar-button#minimize-button:hover,
+body.dark-mode .titlebar-button#maximize-button:hover {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+/* 图标大小和颜色调整 */
 .titlebar-button .material-icons {
     font-size: 16px;
     color: #333;
+    transition: color 0.2s ease;
+}
+
+body.dark-mode .titlebar-button .material-icons {
+    color: #ffffff;
 }
 
 /* 暗色模式适配 */
 body.dark-mode .titlebar-text {
-    color: #fff;
-}
-
-body.dark-mode .titlebar-button .material-icons {
-    color: #fff;
-}
-
-body.dark-mode .titlebar-button:hover {
-    background: rgba(255,255,255,0.1);
-}
-
-/* 内容区域的透明度控制 */
-.content-area {
-    position: fixed;
-    top: 30px;  /* 标题栏高度 */
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: rgba(255, 255, 255, var(--opacity));  /* 使用CSS变量控制透明度 */
+    color: #ffffff;
 }
 
 /* 确保窗口控制按钮可点击 */
@@ -305,4 +328,57 @@ body.dark-mode .action-button.danger:hover {
 /* 暗色模式下的背景遮罩 */
 body.dark-mode::before {
     background-color: rgba(26, 26, 26, var(--bg-opacity)) !important;
+}
+
+/* 标题栏暗色模式样式 */
+body.dark-mode .titlebar {
+    background: transparent;
+}
+
+body.dark-mode .titlebar-text {
+    color: #ffffff;
+}
+
+body.dark-mode .titlebar-button {
+    background: transparent;
+}
+
+body.dark-mode .titlebar-button:hover {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+body.dark-mode .titlebar-button .material-icons {
+    color: #ffffff;
+}
+
+/* 关闭按钮特殊处理 */
+body.dark-mode .titlebar-button#close-button:hover {
+    background: rgba(232, 17, 35, 0.9);
+}
+
+body.dark-mode .titlebar-button#close-button:hover .material-icons {
+    color: #ffffff;
+}
+
+/* 移除所有可能的背景色 */
+.titlebar,
+.titlebar-button,
+body.dark-mode .titlebar,
+body.dark-mode .titlebar-button {
+    background: transparent !important;
+}
+
+/* 只在悬停时显示按钮背景 */
+.titlebar-button:hover {
+    background: rgba(0, 0, 0, 0.1) !important;
+}
+
+body.dark-mode .titlebar-button:hover {
+    background: rgba(255, 255, 255, 0.1) !important;
+}
+
+/* 关闭按钮悬停效果保持不变 */
+.titlebar-button#close-button:hover,
+body.dark-mode .titlebar-button#close-button:hover {
+    background: rgba(232, 17, 35, 0.9) !important;
 } 
