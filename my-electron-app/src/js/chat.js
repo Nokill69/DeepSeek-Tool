@@ -214,6 +214,12 @@ function initChat() {
     // 初始化滚动处理
     initScrollHandler(chatHistory);
 
+    // 添加窗口显示事件监听
+    ipcRenderer.on('window-shown', () => {
+        // 聚焦到输入框
+        userInput.focus();
+    });
+
     userInput.addEventListener('keydown', function(event) {
         if (event.key === 'Enter') {
             event.preventDefault();

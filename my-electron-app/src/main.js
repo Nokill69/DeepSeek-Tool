@@ -112,6 +112,12 @@ function createMainWindow() {
         break;
     }
   });
+
+  // 添加窗口显示事件处理
+  mainWin.on('show', () => {
+    // 通知渲染进程窗口已显示
+    mainWin.webContents.send('window-shown');
+  });
 }
 
 app.whenReady().then(async () => {
