@@ -171,14 +171,129 @@ class TitlebarColorAdapter {
         };
     }
 
-    // 计算亮度
+    // 计算颜色亮度
     calculateBrightness(color) {
         return (color.r * 299 + color.g * 587 + color.b * 114) / 1000;
     }
 
-    // 获取对比色
-    getContrastColor(brightness) {
-        return brightness > 128 ? '#000000' : '#ffffff';
+    // 计算颜色饱和度
+    calculateSaturation(color) {
+        const max = Math.max(color.r, color.g, color.b);
+        const min = Math.min(color.r, color.g, color.b);
+        return max === 0 ? 0 : (max - min) / max;
+    }
+
+    // 获取最佳对比色
+    getContrastColor(bgColor) {
+        const brightness = this.calculateBrightness(bgColor);
+        const saturation = this.calculateSaturation(bgColor);
+
+        // 将 RGB 转换为 HSL
+        const r = bgColor.r / 255;
+        const g = bgColor.g / 255;
+        const b = bgColor.b / 255;
+        const max = Math.max(r, g, b);
+        const min = Math.min(r, g, b);
+        let h, s, l = (max + min) / 2;
+
+        if (max === min) {
+            h = s = 0;
+        } else {
+            const d = max - min;
+            s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+            switch (max) {
+                case r: h = (g - b) / d + (g < b ? 6 : 0); break;
+                case g: h = (b - r) / d + 2; break;
+                case b: h = (r - g) / d + 4; break;
+            }
+            h /= 6;
+        }
+
+        // 增强的颜色选择逻辑
+        if (saturation < 0.1) {
+            // 对于接近灰度的背景，使用黑白对比
+            return brightness < 128 ? '#ffffff' : '#000000';
+        } else {
+            // 对于有色彩的背景，生成互补色
+            let contrastH = (h * 360 + 180) % 360;  // 互补色相
+            let contrastS = Math.min(100, saturation * 100 + 20);  // 增加饱和度
+            let contrastL;
+
+            if (brightness < 60) {
+                // 暗色背景使用明亮的对比色
+                contrastL = Math.max(80, 100 - brightness);
+                return `hsl(${contrastH}, ${contrastS}%, ${contrastL}%)`;
+            } else if (brightness > 200) {
+                // 亮色背景使用深色的对比色
+                contrastL = Math.min(30, brightness - 50);
+                return `hsl(${contrastH}, ${contrastS}%, ${contrastL}%)`;
+            } else {
+                // 中等亮度背景使用互补色
+                contrastL = brightness < 128 ? 80 : 30;
+                
+                // 如果背景色饱和度较高，使用分裂互补色方案
+                if (saturation > 0.6) {
+                    contrastH = (h * 360 + 150 + Math.random() * 60) % 360;  // 在互补色附近随机偏移
+                    contrastS = Math.min(90, saturation * 100 + 10);
+                }
+
+                return `hsl(${contrastH}, ${contrastS}%, ${contrastL}%)`;
+            }
+        }
+    }
+
+    // 获取悬停效果颜色
+    getHoverColors(bgColor, isCloseButton = false) {
+        if (isCloseButton) {
+            return {
+                bg: 'rgba(232, 17, 35, 0.9)',
+                color: '#ffffff'
+            };
+        }
+
+        const brightness = this.calculateBrightness(bgColor);
+        const saturation = this.calculateSaturation(bgColor);
+
+        // 将 RGB 转换为 HSL（复用之前的转换代码）
+        const r = bgColor.r / 255;
+        const g = bgColor.g / 255;
+        const b = bgColor.b / 255;
+        const max = Math.max(r, g, b);
+        const min = Math.min(r, g, b);
+        let h, s, l = (max + min) / 2;
+
+        if (max === min) {
+            h = s = 0;
+        } else {
+            const d = max - min;
+            s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+            switch (max) {
+                case r: h = (g - b) / d + (g < b ? 6 : 0); break;
+                case g: h = (b - r) / d + 2; break;
+                case b: h = (r - g) / d + 4; break;
+            }
+            h /= 6;
+        }
+
+        if (saturation < 0.1) {
+            // 对于接近灰度的背景，使用传统的明暗对比
+            return {
+                bg: brightness > 128 ? 'rgba(0, 0, 0, 0.1)' : 'rgba(255, 255, 255, 0.1)',
+                color: this.getContrastColor(bgColor)
+            };
+        } else {
+            // 对于有色彩的背景，使用更丰富的颜色方案
+            const hoverH = (h * 360 + 30) % 360;  // 邻近色
+            const hoverS = Math.min(100, s * 100 + 10);
+            const hoverL = brightness < 128 ? 
+                Math.min(90, l * 100 + 20) : 
+                Math.max(10, l * 100 - 20);
+
+            return {
+                bg: `hsla(${hoverH}, ${hoverS}%, ${hoverL}%, 0.2)`,
+                color: this.getContrastColor(bgColor)
+            };
+        }
     }
 
     // 更新标题颜色
@@ -194,15 +309,23 @@ class TitlebarColorAdapter {
         };
         
         const avgColor = this.getAverageColor(sampleRect);
+        const contrastColor = this.getContrastColor(avgColor);
+        this.elements.title.style.color = contrastColor;
+
+        // 可选：为标题文本添加文字阴影以提高可读性
         const brightness = this.calculateBrightness(avgColor);
-        this.elements.title.style.color = this.getContrastColor(brightness);
+        if (brightness > 180 || brightness < 70) {
+            const shadowColor = brightness > 128 ? 'rgba(0,0,0,0.2)' : 'rgba(255,255,255,0.2)';
+            this.elements.title.style.textShadow = `0 1px 2px ${shadowColor}`;
+        } else {
+            this.elements.title.style.textShadow = 'none';
+        }
     }
 
     // 更新按钮颜色
     updateButtonColors() {
         this.elements.buttons.forEach(button => {
             const rect = button.getBoundingClientRect();
-            // 扩大采样区域以获得更准确的背景色
             const sampleRect = {
                 x: rect.x,
                 y: rect.y,
@@ -211,8 +334,7 @@ class TitlebarColorAdapter {
             };
             
             const avgColor = this.getAverageColor(sampleRect);
-            const brightness = this.calculateBrightness(avgColor);
-            const contrastColor = this.getContrastColor(brightness);
+            const contrastColor = this.getContrastColor(avgColor);
             
             // 更新按钮内所有图标的颜色
             const icons = button.querySelectorAll('.material-icons');
@@ -220,19 +342,10 @@ class TitlebarColorAdapter {
                 icon.style.color = contrastColor;
             });
 
-            // 同时更新按钮的悬停效果
-            if (button.id === 'close-button') {
-                // 关闭按钮保持红色悬停效果
-                button.style.setProperty('--hover-bg', 'rgba(232, 17, 35, 0.9)');
-                button.style.setProperty('--hover-color', '#ffffff');
-            } else {
-                // 其他按钮使用基于背景的对比色
-                const hoverBg = brightness > 128 
-                    ? 'rgba(0, 0, 0, 0.1)' 
-                    : 'rgba(255, 255, 255, 0.1)';
-                button.style.setProperty('--hover-bg', hoverBg);
-                button.style.setProperty('--hover-color', contrastColor);
-            }
+            // 更新悬停效果
+            const hoverColors = this.getHoverColors(avgColor, button.id === 'close-button');
+            button.style.setProperty('--hover-bg', hoverColors.bg);
+            button.style.setProperty('--hover-color', hoverColors.color);
         });
     }
 }
