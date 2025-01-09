@@ -237,27 +237,23 @@ input:checked + .slider:before {
     align-items: center;
     justify-content: center;
     -webkit-app-region: no-drag;
-    transition: background-color 0.2s ease;
+    transition: background-color 0.2s ease, color 0.2s ease;
+    --hover-bg: rgba(0, 0, 0, 0.1);
+    --hover-color: inherit;
 }
 
-/* 普通按钮悬停效果 */
 .titlebar-button:hover {
-    background: rgba(0, 0, 0, 0.1) !important;
+    background: var(--hover-bg) !important;
 }
 
-/* 关闭按钮特殊处理 */
-.titlebar-button#close-button:hover {
-    background: rgba(232, 17, 35, 0.9) !important;
+.titlebar-button:hover .material-icons {
+    color: var(--hover-color) !important;
 }
 
-.titlebar-button#close-button:hover .material-icons {
-    color: #ffffff;
-}
-
-/* 最大化/最小化按钮悬停效果 */
-.titlebar-button#minimize-button:hover,
-.titlebar-button#maximize-button:hover {
-    background: rgba(0, 0, 0, 0.1);
+/* 移除之前的固定颜色样式 */
+.titlebar-button .material-icons {
+    font-size: 16px;
+    transition: color 0.2s ease;
 }
 
 /* 暗色模式下的按钮样式 */
@@ -274,28 +270,53 @@ body.dark-mode .titlebar-button#maximize-button:hover {
     background: rgba(255, 255, 255, 0.1);
 }
 
-/* 图标大小和颜色调整 */
-.titlebar-button .material-icons {
-    font-size: 16px;
-    color: #333;
-    transition: color 0.2s ease;
+/* 暗色模式适配 */
+body.dark-mode .titlebar-text {
+    color: #ffffff;
+}
+
+body.dark-mode .titlebar-button {
+    background: transparent;
+}
+
+body.dark-mode .titlebar-button:hover {
+    background: rgba(255, 255, 255, 0.1);
 }
 
 body.dark-mode .titlebar-button .material-icons {
     color: #ffffff;
 }
 
-/* 暗色模式适配 */
-body.dark-mode .titlebar-text {
+/* 关闭按钮特殊处理 */
+body.dark-mode .titlebar-button#close-button:hover {
+    background: rgba(232, 17, 35, 0.9);
+}
+
+body.dark-mode .titlebar-button#close-button:hover .material-icons {
     color: #ffffff;
 }
 
-/* 确保窗口控制按钮可点击 */
-.titlebar .window-controls {
-    -webkit-app-region: no-drag;
-    position: absolute;
-    top: 0;
-    right: 0;
+/* 移除所有可能的背景色 */
+.titlebar,
+.titlebar-button,
+body.dark-mode .titlebar,
+body.dark-mode .titlebar-button {
+    background: transparent !important;
+}
+
+/* 只在悬停时显示按钮背景 */
+.titlebar-button:hover {
+    background: rgba(0, 0, 0, 0.1) !important;
+}
+
+body.dark-mode .titlebar-button:hover {
+    background: rgba(255, 255, 255, 0.1) !important;
+}
+
+/* 关闭按钮悬停效果保持不变 */
+.titlebar-button#close-button:hover,
+body.dark-mode .titlebar-button#close-button:hover {
+    background: rgba(232, 17, 35, 0.9) !important;
 }
 
 /* Material Icons 字体 */
@@ -387,25 +408,103 @@ body.dark-mode .titlebar-button#close-button:hover .material-icons {
     color: #ffffff;
 }
 
-/* 移除所有可能的背景色 */
-.titlebar,
-.titlebar-button,
-body.dark-mode .titlebar,
-body.dark-mode .titlebar-button {
-    background: transparent !important;
+/* 确保窗口控制按钮可点击 */
+.titlebar .window-controls {
+    -webkit-app-region: no-drag;
+    position: absolute;
+    top: 0;
+    right: 0;
 }
 
-/* 只在悬停时显示按钮背景 */
+/* 标题栏按钮样式 */
+.titlebar-button {
+    width: 46px;
+    height: 30px;
+    border: none;
+    background: transparent;
+    outline: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    -webkit-app-region: no-drag;
+    transition: background-color 0.2s ease, color 0.2s ease;
+    --hover-bg: rgba(0, 0, 0, 0.1);
+    --hover-color: inherit;
+}
+
 .titlebar-button:hover {
-    background: rgba(0, 0, 0, 0.1) !important;
+    background: var(--hover-bg) !important;
 }
 
-body.dark-mode .titlebar-button:hover {
-    background: rgba(255, 255, 255, 0.1) !important;
+.titlebar-button:hover .material-icons {
+    color: var(--hover-color) !important;
 }
 
-/* 关闭按钮悬停效果保持不变 */
-.titlebar-button#close-button:hover,
-body.dark-mode .titlebar-button#close-button:hover {
-    background: rgba(232, 17, 35, 0.9) !important;
+/* 移除之前的固定颜色样式 */
+.titlebar-button .material-icons {
+    font-size: 16px;
+    transition: color 0.2s ease;
+}
+
+/* 标题栏按钮样式 */
+.titlebar-button {
+    width: 46px;
+    height: 30px;
+    border: none;
+    background: transparent;
+    outline: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    -webkit-app-region: no-drag;
+    transition: background-color 0.2s ease, color 0.2s ease;
+    --hover-bg: rgba(0, 0, 0, 0.1);
+    --hover-color: inherit;
+}
+
+.titlebar-button:hover {
+    background: var(--hover-bg) !important;
+}
+
+.titlebar-button:hover .material-icons {
+    color: var(--hover-color) !important;
+}
+
+/* 移除之前的固定颜色样式 */
+.titlebar-button .material-icons {
+    font-size: 16px;
+    transition: color 0.2s ease;
+}
+
+/* 标题栏按钮样式 */
+.titlebar-button {
+    width: 46px;
+    height: 30px;
+    border: none;
+    background: transparent;
+    outline: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    -webkit-app-region: no-drag;
+    transition: background-color 0.2s ease, color 0.2s ease;
+    --hover-bg: rgba(0, 0, 0, 0.1);
+    --hover-color: inherit;
+}
+
+.titlebar-button:hover {
+    background: var(--hover-bg) !important;
+}
+
+.titlebar-button:hover .material-icons {
+    color: var(--hover-color) !important;
+}
+
+/* 移除之前的固定颜色样式 */
+.titlebar-button .material-icons {
+    font-size: 16px;
+    transition: color 0.2s ease;
 } 

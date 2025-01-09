@@ -141,6 +141,7 @@
     const { initTheme } = require('./js/theme.js');
     const { initSettings } = require('./js/settings.js');
     const { initWindowControls } = require('./js/window-controls.js');
+    const { initTitlebarColor } = require('./js/titlebar-color.js');
 
     // 初始化所有功能
     document.addEventListener('DOMContentLoaded', () => {
@@ -148,6 +149,7 @@
         initTheme();
         initSettings();
         initWindowControls();
+        initTitlebarColor();
     });
   </script>
 </body>
