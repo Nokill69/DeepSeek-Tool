@@ -230,10 +230,10 @@ if (!gotTheLock) {
                         return { error: '无法创建背景图片目录' };
                     }
 
-                    const fileName = `background${path.extname(sourcePath)}`;
-                    const targetPath = path.join(bgDir, fileName);
+                    // 统一使用 background.jpg 作为文件名
+                    const targetPath = path.join(bgDir, 'background.jpg');
 
-                    // 复制文件到目标目录
+                    // 复制文件到目标目录并重命名
                     await fsExtra.copy(sourcePath, targetPath);
                     
                     return { 
@@ -249,18 +249,14 @@ if (!gotTheLock) {
             return { canceled: true };
         });
 
-        // 添加获取背景图片路径的处理器
+        // 修改获取背景图片路径的处理器
         ipcMain.handle('get-background', () => {
             const bgDir = getBackgroundImageDir();
-            const possibleExtensions = ['.jpg', '.jpeg', '.png', '.gif'];
+            const bgPath = path.join(bgDir, 'background.jpg');
             
             try {
-                for (const ext of possibleExtensions) {
-                    const bgPath = path.join(bgDir, `background${ext}`);
-                    if (fs.existsSync(bgPath)) {
-                        // 返回正确编码的文件 URL
-                        return bgPath.replace(/\\/g, '/');  // 确保使用正斜杠
-                    }
+                if (fs.existsSync(bgPath)) {
+                    return bgPath.replace(/\\/g, '/');  // 确保使用正斜杠
                 }
             } catch (error) {
                 console.error('获取背景图片路径失败:', error);
