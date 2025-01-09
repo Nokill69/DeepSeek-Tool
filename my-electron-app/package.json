@@ -1,6 +1,6 @@
 {
   "name": "deepseek-assistant",
-  "version": "1.1.1",
+  "version": "1.1.2",
   "description": "DeepSeek AI Assistant",
   "main": "src/main.js",
   "author": "Your Name",
@@ -12,26 +12,17 @@
     },
     "files": [
       "src/**/*",
-      "!src/**/*.{md,txt}",
-      "!**/node_modules/*/{CHANGELOG.md,README.md,README,readme.md,readme}",
-      "!**/node_modules/*/{test,__tests__,tests,powered-test,example,examples}",
-      "!**/node_modules/*.d.ts",
-      "!**/node_modules/.bin",
-      "!**/*.{iml,o,hprof,orig,pyc,pyo,rbc,swp,csproj,sln,xproj}",
-      "!.editorconfig",
-      "!**/._*",
-      "!**/{.DS_Store,.git,.hg,.svn,CVS,RCS,SCCS,.gitignore,.gitattributes}",
-      "!**/{__pycache__,thumbs.db,.flowconfig,.idea,.vs,.nyc_output}",
-      "!**/{appveyor.yml,.travis.yml,circle.yml}",
-      "!**/{npm-debug.log,yarn.lock,.yarn-integrity,.yarn-metadata.json}"
+      "node_modules/**/*",
+      "package.json"
+    ],
+    "asar": true,
+    "asarUnpack": [
+      "node_modules/ffmpeg-static/*"
     ],
     "extraResources": [
       {
-        "from": "src/assets",
-        "to": "assets",
-        "filter": [
-          "**/*"
-        ]
+        "from": "assets/",
+        "to": "assets/"
       }
     ],
     "win": {
@@ -64,23 +55,28 @@
     },
     "portable": {
       "artifactName": "${productName}便携版v${version}.${ext}"
-    }
+    },
+    "extraMetadata": {
+      "main": "src/main.js"
+    },
+    "compression": "maximum",
+    "removePackageScripts": true,
+    "removePackageKeywords": true
   },
   "scripts": {
     "start": "chcp 65001 && cross-env NODE_ENV=development electron .",
     "prod": "chcp 65001 && cross-env NODE_ENV=production electron .",
     "build": "cross-env ELECTRON_MIRROR=https://npmmirror.com/mirrors/electron/ electron-builder --win",
-    "dist": "cross-env ELECTRON_MIRROR=https://npmmirror.com/mirrors/electron/ electron-builder --win --publish never"
+    "dist": "cross-env ELECTRON_MIRROR=https://npmmirror.com/mirrors/electron/ electron-builder --win --publish never",
+    "check-deps": "depcheck"
   },
   "devDependencies": {
     "cross-env": "^7.0.3",
     "electron": "^33.2.1",
-    "electron-builder": "^24.13.3",
+    "electron-builder": "^24.0.0",
     "electron-reloader": "^1.2.3"
   },
   "dependencies": {
-    "auto-launch": "^5.0.5",
-    "electron-store": "^10.0.0",
     "fs-extra": "^11.2.0",
     "highlight.js": "^11.11.1",
     "html2canvas": "^1.4.1",
