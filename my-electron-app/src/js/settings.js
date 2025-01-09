@@ -104,10 +104,16 @@ async function initBackgroundSettings() {
     const backgroundPathElement = document.getElementById('background-path');
     const openBgPathButton = document.getElementById('open-background-path-button');
     
-    // 初始化透明度滑块
+    // 更新所有透明度相关的值
+    function updateOpacity(opacity) {
+        document.documentElement.style.setProperty('--bg-opacity', opacity);
+        localStorage.setItem('backgroundOpacity', opacity);
+    }
+
+    // 初始化透明度
     opacitySlider.value = backgroundOpacity;
-    document.documentElement.style.setProperty('--bg-opacity', backgroundOpacity);
-    
+    updateOpacity(backgroundOpacity);
+
     // 设置背景图片的函数
     function setBackgroundImage(imagePath) {
         if (imagePath) {
@@ -129,9 +135,7 @@ async function initBackgroundSettings() {
     
     // 监听透明度变化
     opacitySlider.addEventListener('input', (e) => {
-        const opacity = e.target.value;
-        document.documentElement.style.setProperty('--bg-opacity', opacity);
-        localStorage.setItem('backgroundOpacity', opacity);
+        updateOpacity(e.target.value);
     });
     
     // 选择背景图片

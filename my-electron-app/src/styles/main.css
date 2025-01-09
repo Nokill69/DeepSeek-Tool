@@ -25,11 +25,14 @@ body::before {
     right: 0;
     bottom: 0;
     background-color: rgba(255, 255, 255, var(--bg-opacity));
-    z-index: -1;
+    z-index: 0;
+    transition: background-color 0.3s ease;
 }
 
 /* 主要内容区域容器 */
 .main-content {
+    position: relative;
+    z-index: 1;
     padding: 20px;
     flex: 1;
     display: flex;
@@ -264,5 +267,5 @@ body.dark-mode .action-button.danger:hover {
 
 /* 暗色模式下的背景遮罩 */
 body.dark-mode::before {
-    background-color: rgba(26, 26, 26, var(--bg-opacity));
+    background-color: rgba(26, 26, 26, var(--bg-opacity)) !important;
 } 
