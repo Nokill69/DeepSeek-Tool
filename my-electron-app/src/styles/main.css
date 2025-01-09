@@ -507,4 +507,25 @@ body.dark-mode .titlebar-button#close-button:hover .material-icons {
 .titlebar-button .material-icons {
     font-size: 16px;
     transition: color 0.2s ease;
+}
+
+/* 大标题样式 */
+#main-title {
+    margin: 0;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    gap: 1px;  /* 字符间距 */
+}
+
+.auto-color-char {
+    display: inline-block;
+    transition: color 0.3s ease, text-shadow 0.3s ease;
+    font-weight: bold;
+}
+
+/* 可选：添加鼠标悬停效果 */
+.auto-color-char:hover {
+    transform: scale(1.1);
+    transition: transform 0.2s ease;
 } 

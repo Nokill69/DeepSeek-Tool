@@ -7,7 +7,8 @@ class TitlebarColorAdapter {
         this.debounceTimer = null;
         this.elements = {
             title: document.querySelector('.titlebar-text'),
-            buttons: Array.from(document.querySelectorAll('.titlebar-button'))
+            buttons: Array.from(document.querySelectorAll('.titlebar-button')),
+            mainTitleChars: Array.from(document.querySelectorAll('#main-title .auto-color-char'))
         };
     }
 
@@ -124,6 +125,7 @@ class TitlebarColorAdapter {
             await this.captureBackground();
             this.updateTitleColor();
             this.updateButtonColors();
+            this.updateMainTitleColors();
         } catch (error) {
             console.error('更新颜色时出错:', error);
         }
@@ -184,7 +186,7 @@ class TitlebarColorAdapter {
     }
 
     // 获取最佳对比色
-    getContrastColor(bgColor) {
+    getContrastColor(bgColor, isMainTitle = false) {
         const brightness = this.calculateBrightness(bgColor);
         const saturation = this.calculateSaturation(bgColor);
 
@@ -240,6 +242,25 @@ class TitlebarColorAdapter {
                 return `hsl(${contrastH}, ${contrastS}%, ${contrastL}%)`;
             }
         }
+
+        // 对于大标题字符，增加一些随机性和更丰富的颜色
+        if (isMainTitle && saturation >= 0.1) {
+            // 在互补色的基础上添加随机偏移
+            const randomOffset = Math.random() * 60 - 30; // -30 到 30 度的随机偏移
+            contrastH = (contrastH + randomOffset + 360) % 360;
+            
+            // 增加饱和度变化
+            contrastS = Math.min(100, saturation * 100 + Math.random() * 20 + 10);
+            
+            // 根据背景亮度调整对比度
+            if (brightness < 128) {
+                contrastL = Math.max(70, 90 - Math.random() * 20);
+            } else {
+                contrastL = Math.min(40, 30 + Math.random() * 20);
+            }
+        }
+
+        return `hsl(${contrastH}, ${contrastS}%, ${contrastL}%)`;
     }
 
     // 获取悬停效果颜色
@@ -346,6 +367,42 @@ class TitlebarColorAdapter {
             const hoverColors = this.getHoverColors(avgColor, button.id === 'close-button');
             button.style.setProperty('--hover-bg', hoverColors.bg);
             button.style.setProperty('--hover-color', hoverColors.color);
+        });
+    }
+
+    // 添加大标题颜色更新方法
+    updateMainTitleColors() {
+        this.elements.mainTitleChars.forEach(char => {
+            const rect = char.getBoundingClientRect();
+            // 获取字符中心点的位置
+            const centerX = rect.x + rect.width / 2;
+            const centerY = rect.y + rect.height / 2;
+            
+            // 采样区域略大于字符本身
+            const sampleRect = {
+                x: centerX - rect.width / 2,
+                y: centerY - rect.height / 2,
+                width: rect.width,
+                height: rect.height
+            };
+            
+            const avgColor = this.getAverageColor(sampleRect);
+            const contrastColor = this.getContrastColor(avgColor, true);
+            
+            // 设置字符颜色
+            char.style.color = contrastColor;
+
+            // 添加文字阴影以提高可读性
+            const brightness = this.calculateBrightness(avgColor);
+            if (brightness > 180 || brightness < 70) {
+                const shadowColor = brightness > 128 ? 'rgba(0,0,0,0.2)' : 'rgba(255,255,255,0.2)';
+                char.style.textShadow = `0 1px 2px ${shadowColor}`;
+            } else {
+                char.style.textShadow = 'none';
+            }
+
+            // 添加过渡效果
+            char.style.transition = 'color 0.3s ease, text-shadow 0.3s ease';
         });
     }
 }
