@@ -52,6 +52,33 @@ function saveConfig(key, shortcut) {
   }
 }
 
+// 获取背景图片存储目录
+function getBackgroundImageDir() {
+    // 统一使用用户目录存储背景图片
+    const userBgPath = path.join(app.getPath('home'), '.deepseek-assistant', 'backgrounds');
+    console.log('背景图片目录:', userBgPath);
+    return userBgPath;
+}
+
+// 确保背景图片目录存在
+function ensureBackgroundDir() {
+    const bgDir = getBackgroundImageDir();
+    console.log('确保目录存在:', bgDir);
+    
+    try {
+        if (!fs.existsSync(bgDir)) {
+            fs.mkdirSync(bgDir, { recursive: true });
+            console.log('创建目录成功');
+        }
+        return bgDir;
+    } catch (error) {
+        console.error('创建背景目录失败:', error);
+        // 这里不应该使用 showMessage，因为它是渲染进程的函数
+        console.error('创建背景图片目录失败，请检查权限');
+        return null;
+    }
+}
+
 function createMainWindow() {
   mainWin = new BrowserWindow({
     width: 1200,
@@ -117,6 +144,71 @@ function createMainWindow() {
   mainWin.on('show', () => {
     // 通知渲染进程窗口已显示
     mainWin.webContents.send('window-shown');
+  });
+
+  // 添加背景图片相关的 IPC 处理
+  ipcMain.handle('select-background', async () => {
+    const { dialog } = require('electron');
+    const result = await dialog.showOpenDialog(mainWin, {
+        properties: ['openFile'],
+        filters: [
+            { name: '图片文件', extensions: ['jpg', 'jpeg', 'png', 'gif'] }
+        ]
+    });
+
+    if (!result.canceled && result.filePaths.length > 0) {
+        const sourcePath = result.filePaths[0];
+        
+        // 检查文件大小（10MB）
+        const stats = fs.statSync(sourcePath);
+        const fileSizeInMB = stats.size / (1024 * 1024);
+        if (fileSizeInMB > 10) {
+            return { error: '图片大小不能超过 10MB' };
+        }
+
+        try {
+            // 确保目标目录存在
+            const bgDir = ensureBackgroundDir();
+            if (!bgDir) {
+                return { error: '无法创建背景图片目录' };
+            }
+
+            const fileName = `background${path.extname(sourcePath)}`;
+            const targetPath = path.join(bgDir, fileName);
+
+            // 复制文件到目标目录
+            await fsExtra.copy(sourcePath, targetPath);
+            
+            return { 
+                success: true, 
+                path: targetPath.replace(/\\/g, '/'),  // 确保使用正斜杠
+                relativePath: path.relative(app.getPath('userData'), targetPath)
+            };
+        } catch (error) {
+            console.error('复制背景图片失败:', error);
+            return { error: '设置背景图片失败' };
+        }
+    }
+    return { canceled: true };
+  });
+
+  // 添加获取背景图片路径的处理器
+  ipcMain.handle('get-background', () => {
+    const bgDir = getBackgroundImageDir();
+    const possibleExtensions = ['.jpg', '.jpeg', '.png', '.gif'];
+    
+    try {
+        for (const ext of possibleExtensions) {
+            const bgPath = path.join(bgDir, `background${ext}`);
+            if (fs.existsSync(bgPath)) {
+                // 返回正确编码的文件 URL
+                return bgPath.replace(/\\/g, '/');  // 确保使用正斜杠
+            }
+        }
+    } catch (error) {
+        console.error('获取背景图片路径失败:', error);
+    }
+    return null;
   });
 }
 

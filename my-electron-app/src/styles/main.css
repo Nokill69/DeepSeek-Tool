@@ -1,9 +1,15 @@
+:root {
+    --bg-opacity: 0.65;
+}
+
 /* 基础样式 */
 body {
     font-family: Arial, sans-serif;
     margin: 0;
     background: url('app://assets/background.png') no-repeat center center fixed;
     background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
     height: 100vh;
     display: flex;
     flex-direction: column;
@@ -18,7 +24,7 @@ body::before {
     left: 0;
     right: 0;
     bottom: 0;
-    background-color: rgba(255, 255, 255, 0.65);
+    background-color: rgba(255, 255, 255, var(--bg-opacity));
     z-index: -1;
 }
 
@@ -254,4 +260,9 @@ body.dark-mode .action-button.danger:hover {
     background-color: #c82333;  /* 保持红色不变 */
     transform: translateY(-1px);
     box-shadow: 0 2px 4px rgba(220, 53, 69, 0.3);  /* 添加红色阴影 */
+}
+
+/* 暗色模式下的背景遮罩 */
+body.dark-mode::before {
+    background-color: rgba(26, 26, 26, var(--bg-opacity));
 } 

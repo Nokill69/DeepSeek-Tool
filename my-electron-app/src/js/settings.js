@@ -97,6 +97,73 @@ async function initAutoStartToggle() {
     });
 }
 
+async function initBackgroundSettings() {
+    const backgroundOpacity = localStorage.getItem('backgroundOpacity') || '0.65';
+    const opacitySlider = document.getElementById('background-opacity');
+    const selectBgButton = document.getElementById('select-background');
+    const backgroundPathElement = document.getElementById('background-path');
+    const openBgPathButton = document.getElementById('open-background-path-button');
+    
+    // 初始化透明度滑块
+    opacitySlider.value = backgroundOpacity;
+    document.documentElement.style.setProperty('--bg-opacity', backgroundOpacity);
+    
+    // 设置背景图片的函数
+    function setBackgroundImage(imagePath) {
+        if (imagePath) {
+            // 用户设置了自定义背景图片
+            const timestamp = new Date().getTime();
+            const imageUrl = `file:///${encodeURI(imagePath)}?t=${timestamp}`;
+            document.body.style.backgroundImage = `url('${imageUrl}')`;
+            backgroundPathElement.textContent = imagePath;
+        } else {
+            // 使用默认背景图片
+            document.body.style.backgroundImage = 'url("app://assets/background.png")';
+            backgroundPathElement.textContent = '使用默认背景图片';
+        }
+    }
+    
+    // 加载并显示背景图片路径
+    const bgPath = await ipcRenderer.invoke('get-background');
+    setBackgroundImage(bgPath);
+    
+    // 监听透明度变化
+    opacitySlider.addEventListener('input', (e) => {
+        const opacity = e.target.value;
+        document.documentElement.style.setProperty('--bg-opacity', opacity);
+        localStorage.setItem('backgroundOpacity', opacity);
+    });
+    
+    // 选择背景图片
+    selectBgButton.addEventListener('click', async () => {
+        const result = await ipcRenderer.invoke('select-background');
+        
+        if (result.error) {
+            showMessage(result.error, 'error');
+            return;
+        }
+        
+        if (result.success) {
+            setBackgroundImage(result.path);
+            showMessage('背景图片设置成功', 'success');
+        }
+    });
+
+    // 打开背景图片所在目录
+    openBgPathButton.addEventListener('click', async () => {
+        const currentPath = backgroundPathElement.textContent;
+        if (currentPath && currentPath !== '未设置背景图片') {
+            shell.showItemInFolder(currentPath);
+            setTimeout(() => {
+                activateExplorerWindow(currentPath);
+            }, 500);
+            showMessage('已打开背景图片所在目录', 'success');
+        } else {
+            showMessage('未设置背景图片', 'error');
+        }
+    });
+}
+
 function initSettings() {
     const settingsPanel = document.getElementById('settings-panel');
     const toggleButton = document.getElementById('toggle-settings');
@@ -167,6 +234,9 @@ function initSettings() {
 
     // 初始化自启动开关
     initAutoStartToggle();
+
+    // 初始化背景设置
+    initBackgroundSettings();
 }
 
 module.exports = { initSettings }; 
