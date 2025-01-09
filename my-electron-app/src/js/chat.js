@@ -29,6 +29,33 @@ renderer.link = function(href, title, text) {
 };
 marked.setOptions({ renderer });
 
+// 添加滚动锁定状态
+let isScrollLocked = true;
+
+// 添加智能滚动函数
+function smartScroll(element) {
+    // 如果已锁定，则强制滚动到底部
+    if (isScrollLocked) {
+        element.scrollTop = element.scrollHeight;
+    }
+}
+
+// 添加滚动事件监听函数
+function initScrollHandler(element) {
+    element.addEventListener('scroll', () => {
+        // 检查是否滚动到底部（允许 5px 的误差）
+        const isAtBottom = element.scrollHeight - element.scrollTop - element.clientHeight < 5;
+        
+        if (isAtBottom) {
+            // 滚动到底部时锁定
+            isScrollLocked = true;
+        } else {
+            // 向上滚动时解除锁定
+            isScrollLocked = false;
+        }
+    });
+}
+
 // 处理发送消息
 async function sendMessage(userInput) {
     if (userInput.trim() === '') {
@@ -108,7 +135,9 @@ async function sendMessage(userInput) {
                         const content = jsonObject.choices[0].delta.content || '';
                         accumulatedContent += content;
                         aiMessage.innerHTML = marked.parse(accumulatedContent);
-                        chatHistory.scrollTop = chatHistory.scrollHeight;
+                        
+                        // 使用智能滚动
+                        smartScroll(chatHistory);
                     } catch (e) {
                         console.error('JSON 解析错误:', e);
                     }
@@ -180,6 +209,10 @@ function initChat() {
     const sendButton = document.getElementById('send-button');
     const stopButton = document.getElementById('stop-button');
     const clearButton = document.getElementById('clear-button');
+    const chatHistory = document.getElementById('chat-history');
+
+    // 初始化滚动处理
+    initScrollHandler(chatHistory);
 
     userInput.addEventListener('keydown', function(event) {
         if (event.key === 'Enter') {
@@ -190,12 +223,18 @@ function initChat() {
 
     sendButton.addEventListener('click', () => {
         sendMessage(userInput.value);
+        // 发送新消息时重新锁定滚动
+        isScrollLocked = true;
     });
 
     stopButton.addEventListener('click', stopResponse);
 
     // 添加清除历史按钮的事件监听
-    clearButton.addEventListener('click', clearHistory);
+    clearButton.addEventListener('click', () => {
+        clearHistory();
+        // 清除历史时重置锁定状态
+        isScrollLocked = true;
+    });
 
     // 确保停止按钮初始状态是隐藏的
     stopButton.style.display = 'none';
