@@ -203,6 +203,14 @@ function stopResponse() {
     }
 }
 
+// 添加背景样式处理函数
+function updateBackgroundStyle(style) {
+    // 移除所有背景样式类
+    document.body.classList.remove('bg-fill', 'bg-center', 'bg-contain', 'bg-stretch', 'bg-tile');
+    // 添加选中的样式类
+    document.body.classList.add(`bg-${style}`);
+}
+
 // 初始化聊天相关事件
 function initChat() {
     const userInput = document.getElementById('user-input');
@@ -244,6 +252,16 @@ function initChat() {
 
     // 确保停止按钮初始状态是隐藏的
     stopButton.style.display = 'none';
+
+    // 添加背景样式切换监听
+    const backgroundStyle = document.getElementById('background-style');
+    if (backgroundStyle) {
+        backgroundStyle.addEventListener('change', (e) => {
+            updateBackgroundStyle(e.target.value);
+        });
+        // 设置初始样式
+        updateBackgroundStyle('fill');
+    }
 }
 
 // 修改透明度控制的代码

@@ -6,14 +6,41 @@
 body {
     font-family: Arial, sans-serif;
     margin: 0;
-    background: url('app://assets/background.png') no-repeat center center fixed;
-    background-size: cover;
-    background-position: center;
-    background-repeat: no-repeat;
     height: 100vh;
     display: flex;
     flex-direction: column;
     overflow: hidden;
+}
+
+/* 背景样式 */
+body.bg-fill {
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+}
+
+body.bg-center {
+    background-size: auto;
+    background-position: center;
+    background-repeat: no-repeat;
+}
+
+body.bg-contain {
+    background-size: contain;
+    background-position: center;
+    background-repeat: no-repeat;
+}
+
+body.bg-stretch {
+    background-size: 100% 100%;
+    background-position: center;
+    background-repeat: no-repeat;
+}
+
+body.bg-tile {
+    background-size: auto;
+    background-position: center;
+    background-repeat: repeat;
 }
 
 /* 添加背景遮罩 */
