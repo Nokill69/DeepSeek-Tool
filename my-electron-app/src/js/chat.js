@@ -1,33 +1,55 @@
-const { ipcRenderer } = require('electron');
-const marked = require('marked');
+const { ipcRenderer, shell } = require('electron');
+const { marked } = require('marked');
 const hljs = require('highlight.js');
 const { showMessage } = require('./utils.js');  // 改用工具函数
 
 let messageHistory = [];
 let controller = null;
 let apiKey = '';
+let isInCodeBlock = false;
+let processedCodeBlocks = new Set();
+
+// 创建自定义渲染器
+const renderer = new marked.Renderer();
+
+// 自定义链接渲染
+renderer.link = function(href, title, text) {
+    return `<a href="${href}" title="${title || ''}" onclick="event.preventDefault(); require('electron').shell.openExternal('${href}')">${text}</a>`;
+};
+
+// 自定义表格渲染
+renderer.table = function(header, body) {
+    return `
+        <div class="table-container">
+            <table>
+                <thead>${header}</thead>
+                <tbody>${body}</tbody>
+            </table>
+        </div>
+    `;
+};
 
 // 配置 marked
 marked.setOptions({
-    highlight: function(code, language) {
-        if (language && hljs.getLanguage(language)) {
+    renderer: renderer,  // 使用自定义渲染器
+    gfm: true,          // 启用 GitHub 风格的 Markdown
+    breaks: true,       // 允许回车换行
+    headerIds: false,   // 禁用标题 ID
+    mangle: false,      // 禁用标题 ID 转义
+    tables: true,       // 启用表格支持
+    pedantic: false,    // 尽量不使用严格模式
+    sanitize: false,    // 不进行消毒
+    smartLists: true,   // 使用漂亮的列表
+    smartypants: true,  // 使用漂亮的标点
+    highlight: function(code, lang) {
+        if (lang && hljs.getLanguage(lang)) {
             try {
-                return hljs.highlight(code, { language }).value;
-            } catch (err) {
-                console.error('代码高亮出错:', err);
-            }
+                return hljs.highlight(code, { language: lang }).value;
+            } catch (e) {}
         }
-        return code;
-    },
-    langPrefix: 'hljs language-'
+        return hljs.highlightAuto(code).value;
+    }
 });
-
-// 重写链接渲染器
-const renderer = new marked.Renderer();
-renderer.link = function(href, title, text) {
-    return `<a href="${href}" title="${title || ''}" onclick="event.preventDefault(); shell.openExternal('${href}')">${text}</a>`;
-};
-marked.setOptions({ renderer });
 
 // 添加滚动锁定状态
 let isScrollLocked = true;
@@ -80,7 +102,10 @@ async function sendMessage(userInput) {
         const chatHistory = document.getElementById('chat-history');
         const userMessage = document.createElement('div');
         userMessage.className = 'user-message';
-        userMessage.textContent = userInput;
+        const userMessageContent = document.createElement('div');
+        userMessageContent.className = 'message-content';
+        userMessageContent.textContent = userInput;
+        userMessage.appendChild(userMessageContent);
         chatHistory.appendChild(userMessage);
         
         document.getElementById('user-input').value = '';
@@ -115,6 +140,10 @@ async function sendMessage(userInput) {
         const decoder = new TextDecoder('utf-8');
         let aiMessage = document.createElement('div');
         aiMessage.className = 'ai-message';
+        // 添加 message-content 容器
+        const messageContent = document.createElement('div');
+        messageContent.className = 'message-content';
+        aiMessage.appendChild(messageContent);
         chatHistory.appendChild(aiMessage);
         
         let accumulatedContent = '';
@@ -133,17 +162,45 @@ async function sendMessage(userInput) {
                         if (json.trim() === '[DONE]') continue;
                         const jsonObject = JSON.parse(json);
                         const content = jsonObject.choices[0].delta.content || '';
-                        accumulatedContent += content;
-                        aiMessage.innerHTML = marked.parse(accumulatedContent);
                         
-                        // 使用智能滚动
+                        accumulatedContent += content;
+                        messageContent.innerHTML = marked.parse(accumulatedContent);
+                        
+                        // 处理所有代码块
+                        messageContent.querySelectorAll('pre code').forEach(codeBlock => {
+                            // 使用代码块内容作为唯一标识
+                            const blockId = codeBlock.textContent;
+                            if (!processedCodeBlocks.has(blockId) && 
+                                blockId.includes('```') && // 确保代码块已经有结束标记
+                                blockId.split('```').length >= 2) { // 确保至少有开始和结束标记
+                                
+                                const preElement = codeBlock.parentElement;
+                                if (preElement && 
+                                    preElement.tagName === 'PRE' && 
+                                    (!preElement.parentElement.classList.contains('code-block-wrapper'))) {
+                                    createCodeBlockWrapper(codeBlock);
+                                    processedCodeBlocks.add(blockId);
+                                }
+                            }
+                        });
+                        
                         smartScroll(chatHistory);
                     } catch (e) {
-                        console.error('JSON 解析错误:', e);
+                        console.error('渲染错误:', e);
                     }
                 }
             }
         }
+
+        // 在流式响应结束后，确保处理所有剩余的代码块
+        messageContent.querySelectorAll('pre code').forEach(codeBlock => {
+            const preElement = codeBlock.parentElement;
+            if (preElement && 
+                preElement.tagName === 'PRE' && 
+                (!preElement.parentElement.classList.contains('code-block-wrapper'))) {
+                createCodeBlockWrapper(codeBlock);
+            }
+        });
 
         messageHistory.push({ role: 'assistant', content: accumulatedContent });
 
@@ -158,6 +215,19 @@ async function sendMessage(userInput) {
             abortMessage.className = 'ai-message';
             abortMessage.innerHTML = '<em>回答已停止</em>';
             chatHistory.appendChild(abortMessage);
+            
+            // 在中止时也处理所有未处理的代码块
+            const messageContent = document.querySelector('.ai-message:last-child .message-content');
+            if (messageContent) {
+                messageContent.querySelectorAll('pre code').forEach(codeBlock => {
+                    const preElement = codeBlock.parentElement;
+                    if (preElement && 
+                        preElement.tagName === 'PRE' && 
+                        (!preElement.parentElement.classList.contains('code-block-wrapper'))) {
+                        createCodeBlockWrapper(codeBlock);
+                    }
+                });
+            }
         } else {
             console.error('调用 DeepSeek API 时出错:', error);
             let errorMessage = '与 AI 对话时出现错误';
@@ -176,7 +246,10 @@ async function sendMessage(userInput) {
             // 在聊天界面也显示错误信息
             const errorDiv = document.createElement('div');
             errorDiv.className = 'ai-message error';
-            errorDiv.innerHTML = `<em>${errorMessage}</em>`;
+            const errorContent = document.createElement('div');
+            errorContent.className = 'message-content';
+            errorContent.innerHTML = `<em>${errorMessage}</em>`;
+            errorDiv.appendChild(errorContent);
             chatHistory.appendChild(errorDiv);
         }
     } finally {
@@ -200,6 +273,19 @@ function stopResponse() {
         controller.abort();
         document.getElementById('stop-button').style.display = 'none';
         document.getElementById('send-button').disabled = false;
+        
+        // 在停止回答时处理所有未处理的代码块
+        const messageContent = document.querySelector('.ai-message:last-child .message-content');
+        if (messageContent) {
+            messageContent.querySelectorAll('pre code').forEach(codeBlock => {
+                const preElement = codeBlock.parentElement;
+                if (preElement && 
+                    preElement.tagName === 'PRE' && 
+                    (!preElement.parentElement.classList.contains('code-block-wrapper'))) {
+                    createCodeBlockWrapper(codeBlock);
+                }
+            });
+        }
     }
 }
 
@@ -267,6 +353,86 @@ function initChat() {
 // 修改透明度控制的代码
 function updateOpacity(value) {
     document.documentElement.style.setProperty('--opacity', value);
+}
+
+function createCodeBlockWrapper(codeBlock) {
+    // 获取 pre 标签
+    const preElement = codeBlock.parentElement;
+    if (!preElement || preElement.tagName !== 'PRE') {
+        console.log('未找到 pre 标签或标签不正确');
+        return;
+    }
+    
+    // 检查是否已经被包装
+    if (preElement.parentElement && preElement.parentElement.classList.contains('code-block-wrapper')) {
+        console.log('代码块已经被包装');
+        return;
+    }
+    
+    console.log('创建代码块包装器');
+    
+    // 创建包装器
+    const wrapper = document.createElement('div');
+    wrapper.className = 'code-block-wrapper';
+    
+    // 创建复制按钮
+    const copyButton = document.createElement('button');
+    copyButton.className = 'copy-button';
+    copyButton.innerHTML = '<span class="material-icons" style="font-size: 16px;">content_copy</span>复制';
+    
+    copyButton.addEventListener('click', async (e) => {
+        e.stopPropagation();
+        try {
+            await navigator.clipboard.writeText(codeBlock.textContent);
+            showToast('代码已复制到剪贴板');
+        } catch (err) {
+            showToast('复制失败，请重试');
+            console.error('复制失败:', err);
+        }
+    });
+    
+    // 将 pre 标签包装在容器中
+    preElement.parentNode.insertBefore(wrapper, preElement);
+    wrapper.appendChild(preElement);
+    wrapper.appendChild(copyButton);
+    
+    console.log('代码块包装完成');
+}
+
+function showToast(message) {
+    let toast = document.querySelector('.toast');
+    if (!toast) {
+        toast = document.createElement('div');
+        toast.className = 'toast';
+        document.body.appendChild(toast);
+    }
+    
+    toast.textContent = message;
+    toast.classList.add('show');
+    
+    setTimeout(() => {
+        toast.classList.remove('show');
+    }, 3000);
+}
+
+// 修改消息渲染函数
+function renderMessage(message, isUser = false) {
+    const messageElement = document.createElement('div');
+    messageElement.className = isUser ? 'user-message' : 'ai-message';
+    
+    const messageContent = document.createElement('div');
+    messageContent.className = 'message-content';
+    messageElement.appendChild(messageContent);
+    
+    // 使用 marked 渲染 markdown
+    messageContent.innerHTML = marked.parse(message);
+    
+    // 为所有代码块添加复制按钮
+    messageContent.querySelectorAll('pre code').forEach(codeBlock => {
+        createCodeBlockWrapper(codeBlock);
+    });
+    
+    return messageElement;
 }
 
 module.exports = {

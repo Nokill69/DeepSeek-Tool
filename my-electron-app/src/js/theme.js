@@ -8,17 +8,22 @@ function initTheme() {
     const currentTheme = localStorage.getItem('theme');
     if (currentTheme === 'dark') {
         document.body.classList.add('dark-mode');
+        document.documentElement.setAttribute('data-theme', 'dark');
         themeToggle.checked = true;
+    } else {
+        document.documentElement.setAttribute('data-theme', 'light');
     }
     
     // 监听主题切换
     themeToggle.addEventListener('change', function() {
         if (this.checked) {
             document.body.classList.add('dark-mode');
+            document.documentElement.setAttribute('data-theme', 'dark');
             localStorage.setItem('theme', 'dark');
             ipcRenderer.send('theme-update', true);
         } else {
             document.body.classList.remove('dark-mode');
+            document.documentElement.setAttribute('data-theme', 'light');
             localStorage.setItem('theme', 'light');
             ipcRenderer.send('theme-update', false);
         }

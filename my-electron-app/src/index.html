@@ -8,6 +8,7 @@
   <link rel="stylesheet" href="styles/dark-theme.css">
   <link rel="stylesheet" href="styles/settings-panel.css">
   <link rel="stylesheet" href="styles/chat.css">
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
 </head>
 <body>
   <!-- 添加自定义标题栏 -->
@@ -101,6 +102,15 @@
                     <span class="slider"></span>
                 </label>
             </label>
+        </div>
+
+        <!-- 启动文件夹路径部分 -->
+        <div class="input-group config-path">
+            <label>启动文件夹路径</label>
+            <code id="startup-path"></code>
+            <div class="button-group">
+                <button id="open-startup-folder-button" class="secondary">打开文件夹</button>
+            </div>
         </div>
 
         <!-- 背景设置部分 -->

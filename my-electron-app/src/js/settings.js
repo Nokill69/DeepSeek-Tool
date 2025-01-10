@@ -241,6 +241,29 @@ function initSettings() {
 
     // 初始化背景设置
     initBackgroundSettings();
+
+    // 获取启动文件夹路径
+    const startupPath = process.env.APPDATA + '\\Microsoft\\Windows\\Start Menu\\Programs\\Startup';
+    
+    // 显示启动文件夹路径
+    const startupPathElement = document.getElementById('startup-path');
+    if (startupPathElement) {
+        startupPathElement.textContent = startupPath;
+    }
+
+    // 添加打开启动文件夹按钮的事件监听
+    const openStartupFolderButton = document.getElementById('open-startup-folder-button');
+    if (openStartupFolderButton) {
+        openStartupFolderButton.addEventListener('click', () => {
+            shell.openPath(startupPath)
+                .then(() => {
+                    showMessage('已打开启动文件夹', 'success');
+                })
+                .catch(err => {
+                    showMessage('无法打开启动文件夹: ' + err.message, 'error');
+                });
+        });
+    }
 }
 
 module.exports = { initSettings }; 
