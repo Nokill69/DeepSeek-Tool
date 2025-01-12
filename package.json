@@ -1,0 +1,6 @@
+{
+  "scripts": {
+    "start": "chcp 65001 && cross-env NODE_ENV=development electron .",
+    // ... 其他脚本
+  }
+} 

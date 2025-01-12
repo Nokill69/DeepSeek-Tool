@@ -81,6 +81,7 @@
     "highlight.js": "^11.11.1",
     "html2canvas": "^1.4.1",
     "marked": "^4.3.0",
+    "windows-shortcuts-ps": "^1.0.1",
     "winreg": "^1.2.5"
   },
   "engines": {
