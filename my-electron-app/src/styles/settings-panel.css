@@ -278,4 +278,92 @@ body.dark-mode .test-result.error {
 
 body.dark-mode .theme-switch input:disabled + .slider {
     background-color: #444;
+}
+
+/* 系统提示相关样式 */
+.system-prompt-container {
+    transition: max-height 0.3s ease-out;
+    overflow: hidden;
+    max-height: 300px;
+    padding-right: 8px;
+    box-sizing: border-box;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
+.system-prompt-container.collapsed {
+    max-height: 0;
+}
+
+.system-prompt-container textarea {
+    width: 100%;
+    padding: 8px;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    background: var(--input-bg);
+    color: var(--text-color);
+    font-family: inherit;
+    resize: vertical;
+    min-height: 80px;
+    max-height: 200px;
+    margin-bottom: 8px;
+    box-sizing: border-box;
+}
+
+.system-prompt-container textarea::-webkit-scrollbar {
+    width: 8px;
+}
+
+.system-prompt-container textarea::-webkit-scrollbar-track {
+    background: var(--input-bg);
+    border-radius: 4px;
+}
+
+.system-prompt-container textarea::-webkit-scrollbar-thumb {
+    background: #888;
+    border-radius: 4px;
+}
+
+.system-prompt-container textarea::-webkit-scrollbar-thumb:hover {
+    background: #666;
+}
+
+body.dark-mode .system-prompt-container textarea::-webkit-scrollbar-track {
+    background: #1e1e1e;
+}
+
+body.dark-mode .system-prompt-container textarea::-webkit-scrollbar-thumb {
+    background: #666;
+}
+
+body.dark-mode .system-prompt-container textarea::-webkit-scrollbar-thumb:hover {
+    background: #888;
+}
+
+.icon-button {
+    background: none;
+    border: none;
+    padding: 0;
+    margin-left: 8px;
+    cursor: pointer;
+    color: var(--text-color);
+}
+
+.icon-button .material-icons {
+    transition: transform 0.3s ease;
+    font-size: 18px;
+}
+
+.system-prompt-container.collapsed + label .icon-button .material-icons {
+    transform: rotate(-90deg);
+}
+
+/* 按钮组样式调整 */
+.system-prompt-container .button-group {
+    position: sticky;
+    bottom: 0;
+    background: inherit;
+    padding-top: 8px;
+    margin-top: auto;
 } 

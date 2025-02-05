@@ -82,6 +82,26 @@
             <button id="save-button" class="primary">保存</button>
           </div>
         </div>
+
+        <!-- System Prompt 系统提示-->
+        <div class="input-group">
+            <label for="system-prompt">
+                系统提示
+                <button id="toggle-system-prompt" class="icon-button">
+                    <span class="material-icons">expand_more</span>
+                </button>
+            </label>
+            <div class="system-prompt-container collapsed">
+                <textarea id="system-prompt" 
+                          rows="4" 
+                          placeholder="设置 AI 的系统提示，告诉它应该扮演什么角色..." 
+                          spellcheck="false"></textarea>
+                <div class="button-group">
+                    <button id="reset-system-prompt" class="secondary">恢复默认</button>
+                    <button id="save-system-prompt" class="primary">保存</button>
+                </div>
+            </div>
+        </div>
         
         <!-- 快捷键部分 -->
         <div class="input-group">

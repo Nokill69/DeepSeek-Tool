@@ -177,6 +177,15 @@ function initSettings() {
     const providerSelect = document.getElementById('ai-comp');
     const apiKeyInput = document.getElementById('api-key');
     
+    // 系统提示相关
+    const systemPromptContainer = document.querySelector('.system-prompt-container');
+    const toggleSystemPromptBtn = document.getElementById('toggle-system-prompt');
+    const systemPromptInput = document.getElementById('system-prompt');
+    const resetSystemPromptBtn = document.getElementById('reset-system-prompt');
+    const saveSystemPromptBtn = document.getElementById('save-system-prompt');
+
+    const defaultSystemPrompt = '你是一个乐于助人的助手。你的回答要简洁、专业。';
+
     // 接收初始配置
     ipcRenderer.on('init-config', (event, config) => {
         console.log('收到配置:', config);
@@ -198,6 +207,9 @@ function initSettings() {
         if (configPathElement) {
             configPathElement.textContent = config.configPath || '未设置';
         }
+
+        // 设置系统提示
+        systemPromptInput.value = provider.systemPrompt || defaultSystemPrompt;
     });
 
     // 监听厂商切换
@@ -213,6 +225,9 @@ function initSettings() {
         setApiKey(provider.apiKey || '');
         updateConfig(currentConfig); // 通知 chat.js 更新配置
         ipcRenderer.send('save-config', currentConfig);
+
+        // 设置系统提示
+        systemPromptInput.value = provider.systemPrompt || defaultSystemPrompt;
     });
 
     // 保存 API Key
@@ -330,6 +345,37 @@ function initSettings() {
                 });
         });
     }
+
+    // 切换系统提示展开/收起
+    toggleSystemPromptBtn.addEventListener('click', () => {
+        systemPromptContainer.classList.toggle('collapsed');
+        const icon = toggleSystemPromptBtn.querySelector('.material-icons');
+        icon.style.transform = systemPromptContainer.classList.contains('collapsed') 
+            ? 'rotate(-90deg)' 
+            : 'rotate(0deg)';
+    });
+
+    // 重置系统提示
+    resetSystemPromptBtn.addEventListener('click', () => {
+        systemPromptInput.value = defaultSystemPrompt;
+    });
+
+    // 保存系统提示
+    saveSystemPromptBtn.addEventListener('click', () => {
+        const newPrompt = systemPromptInput.value.trim();
+        if (newPrompt) {
+            const currentProvider = currentConfig.currentProvider;
+            if (!currentConfig.providers[currentProvider]) {
+                currentConfig.providers[currentProvider] = {};
+            }
+            currentConfig.providers[currentProvider].systemPrompt = newPrompt;
+            updateConfig(currentConfig);
+            ipcRenderer.send('save-config', currentConfig);
+            showMessage('系统提示已保存！', 'success');
+        } else {
+            showMessage('系统提示不能为空', 'error');
+        }
+    });
 }
 
 module.exports = { initSettings }; 
