@@ -7,9 +7,22 @@ const Registry = require('winreg');
 // 使用现有的配置系统
 const configPath = path.join(app.getPath('userData'), 'config.json');
 let config = {
-    apiKey: '',
-    shortcut: 'CommandOrControl+Alt+A',
-    // 其他配置项...
+    currentProvider: 'deepseek',
+    providers: {
+        deepseek: {
+            apiKey: '',
+            apiUrl: 'https://api.deepseek.com/chat/completions',
+            model: 'deepseek-chat',
+            systemPrompt: '你是一个乐于助人的助手。你的回答要简洁、专业。'
+        },
+        siliconflow: {
+            apiKey: '',
+            apiUrl: 'https://api.siliconflow.cn/v1/chat/completions', 
+            model: 'deepseek-ai/DeepSeek-V3',
+            systemPrompt: '你是一个专业的编程助手，由硅基流动提供支持。请用简洁专业的方式回答问题。'
+        }
+    },
+    shortcut: 'CommandOrControl+Alt+A'
 };
 
 // 加载配置
@@ -28,10 +41,29 @@ function loadConfig() {
 // 保存配置
 function saveConfig(newConfig) {
     try {
-        fs.writeFileSync(configPath, JSON.stringify(newConfig));
-        config = { ...config, ...newConfig };
+        // 深度合并配置
+        config = {
+            ...config,
+            ...newConfig,
+            providers: {
+                // 只保留两个指定的提供商
+                deepseek: {
+                    ...config.providers.deepseek,
+                    ...(newConfig.providers?.deepseek || {})
+                },
+                siliconflow: {
+                    ...config.providers.siliconflow,
+                    ...(newConfig.providers?.siliconflow || {})
+                }
+            }
+        };
+
+        // 格式化并保存配置
+        const formattedJson = JSON.stringify(config, null, 2);
+        fs.writeFileSync(configPath, formattedJson);
+        console.log('配置已保存:', configPath);
     } catch (error) {
-        console.error('Error saving config:', error);
+        console.error('保存配置时出错:', error);
     }
 }
 
@@ -149,11 +181,10 @@ if (!gotTheLock) {
         mainWin.loadFile(path.join(__dirname, 'index.html'));
 
         mainWin.webContents.on('did-finish-load', () => {
-            mainWin.webContents.send('update-api-key', config.apiKey);
+            // 发送完整的配置对象，并添加 configPath
             mainWin.webContents.send('init-config', {
-                apiKey: config.apiKey,
-                shortcut: config.shortcut,
-                configPath
+                ...config,
+                configPath: configPath  // 添加配置文件路径
             });
         });
 
@@ -350,7 +381,15 @@ if (!gotTheLock) {
 
     // 添加配置保存处理
     ipcMain.on('save-config', (event, newConfig) => {
-        config = { ...config, ...newConfig };
+        // 深度合并配置
+        config = {
+            ...config,
+            ...newConfig,
+            providers: {
+                ...config.providers,
+                ...(newConfig.providers || {})
+            }
+        };
         saveConfig(config);
     });
 

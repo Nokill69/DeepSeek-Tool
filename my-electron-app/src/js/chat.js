@@ -3,6 +3,7 @@ const { marked } = require('marked');
 const hljs = require('highlight.js');
 const { showMessage } = require('./utils.js');  // 改用工具函数
 
+let currentConfig = null;
 let messageHistory = [];
 let controller = null;
 let apiKey = '';
@@ -78,14 +79,37 @@ function initScrollHandler(element) {
     });
 }
 
+// 添加配置更新函数
+function updateConfig(config) {
+    if (!config) {
+        console.warn('updateConfig: 配置对象为空');
+        return;
+    }
+
+    currentConfig = config;
+    const provider = config.providers?.[config.currentProvider] || {};
+    apiKey = provider.apiKey || '';
+    
+    console.log('配置已更新:', {
+        currentProvider: config.currentProvider,
+        hasApiKey: !!provider.apiKey
+    });
+}
+
 // 处理发送消息
 async function sendMessage(userInput) {
+    if (!currentConfig) {
+        showMessage('配置未初始化，请检查设置。', 'error');
+        return;
+    }
+
     if (userInput.trim() === '') {
         alert('请输入消息。');
         return;
     }
 
-    if (apiKey.trim() === '') {
+    const provider = currentConfig.providers?.[currentConfig.currentProvider] || {};
+    if (!provider.apiKey) {
         showMessage('API Key 未设置，请在设置中配置。', 'error');
         return;
     }
@@ -112,16 +136,16 @@ async function sendMessage(userInput) {
         chatHistory.scrollTop = chatHistory.scrollHeight;
         
         controller = new AbortController();
-        const response = await fetch('https://api.deepseek.com/chat/completions', {
+        const response = await fetch(provider.apiUrl, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'Authorization': `Bearer ${apiKey}`
+                'Authorization': `Bearer ${provider.apiKey}`
             },
             body: JSON.stringify({
-                model: 'deepseek-chat',
+                model: provider.model,
                 messages: [
-                    { role: 'system', content: '你是一个乐于助人的助手。你的回答要简洁、专业。' },
+                    { role: 'system', content: provider.systemPrompt },
                     ...messageHistory
                 ],
                 stream: true,
@@ -260,7 +284,7 @@ async function sendMessage(userInput) {
 }
 
 function setApiKey(key) {
-    apiKey = key;
+    apiKey = key || '';
 }
 
 function clearHistory() {
@@ -439,5 +463,6 @@ module.exports = {
     initChat,
     setApiKey,
     clearHistory,
-    stopResponse
+    stopResponse,
+    updateConfig
 }; 

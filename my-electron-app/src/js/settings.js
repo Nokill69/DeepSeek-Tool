@@ -1,5 +1,5 @@
 const { ipcRenderer, shell } = require('electron');
-const { setApiKey } = require('./chat.js');
+const { setApiKey, updateConfig } = require('./chat.js');
 const { showMessage } = require('./utils.js');
 const path = require('path');
 const { exec } = require('child_process');
@@ -7,6 +7,7 @@ const { exec } = require('child_process');
 let apiKey = '';
 let currentShortcut = '';
 let configPath = '';
+let currentConfig = null;
 
 // 添加一个测试日志
 console.log('settings.js 已加载，ipcRenderer:', !!ipcRenderer);
@@ -17,15 +18,17 @@ async function testApiKey(key) {
         return;
     }
     
+    const provider = currentConfig.providers[currentConfig.currentProvider];
+    
     try {
-        const response = await fetch('https://api.deepseek.com/chat/completions', {
+        const response = await fetch(provider.apiUrl, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
                 'Authorization': `Bearer ${key}`
             },
             body: JSON.stringify({
-                model: 'deepseek-chat',
+                model: provider.model,
                 messages: [{ role: 'system', content: '测试消息' }],
                 stream: false,
                 max_tokens: 10
@@ -171,21 +174,97 @@ async function initBackgroundSettings() {
 function initSettings() {
     const settingsPanel = document.getElementById('settings-panel');
     const toggleButton = document.getElementById('toggle-settings');
+    const providerSelect = document.getElementById('ai-comp');
+    const apiKeyInput = document.getElementById('api-key');
     
     // 接收初始配置
     ipcRenderer.on('init-config', (event, config) => {
-        apiKey = config.apiKey;
+        console.log('收到配置:', config);
+        currentConfig = config;
+        providerSelect.value = config.currentProvider;
+        
+        const provider = config.providers[config.currentProvider] || {};
+        
+        // 设置 API Key 输入框的值和占位符
+        apiKeyInput.value = provider.apiKey || '';
+        apiKeyInput.placeholder = provider.apiKey ? '' : '请输入您的 API Key';
+        
+        setApiKey(provider.apiKey || '');
         currentShortcut = config.shortcut;
         configPath = config.configPath;
-        setApiKey(apiKey);
+        
+        // 立即更新配置路径显示
+        const configPathElement = document.getElementById('config-path');
+        if (configPathElement) {
+            configPathElement.textContent = config.configPath || '未设置';
+        }
+    });
+
+    // 监听厂商切换
+    providerSelect.addEventListener('change', function() {
+        const newProvider = this.value;
+        currentConfig.currentProvider = newProvider;
+        const provider = currentConfig.providers[newProvider] || {};
+        
+        // 添加空值判断，显示"未设置"或现有值
+        apiKeyInput.value = provider.apiKey || '';
+        apiKeyInput.placeholder = provider.apiKey ? '' : '请输入您的 API Key';
+        
+        setApiKey(provider.apiKey || '');
+        updateConfig(currentConfig); // 通知 chat.js 更新配置
+        ipcRenderer.send('save-config', currentConfig);
+    });
+
+    // 保存 API Key
+    document.getElementById('save-button').addEventListener('click', function() {
+        const newApiKey = apiKeyInput.value;
+        if (!currentConfig || !currentConfig.providers) {
+            showMessage('配置初始化失败，请刷新页面重试。', 'error');
+            return;
+        }
+
+        const currentProvider = currentConfig.currentProvider;
+        if (!currentConfig.providers[currentProvider]) {
+            // 如果提供商配置不存在，创建一个新的
+            currentConfig.providers[currentProvider] = {
+                apiKey: '',
+                apiUrl: currentProvider === 'deepseek' 
+                    ? 'https://api.deepseek.com/chat/completions'
+                    : 'https://api.siliconflow.cn/v1/chat/completions',
+                model: currentProvider === 'deepseek'
+                    ? 'deepseek-chat'
+                    : 'deepseek-ai/DeepSeek-V3',
+                systemPrompt: currentProvider === 'deepseek'
+                    ? '你是一个乐于助人的助手。你的回答要简洁、专业。'
+                    : '你是一个专业的编程助手，由硅基流动提供支持。请用简洁专业的方式回答问题。'
+            };
+        }
+
+        if (newApiKey.trim() !== '') {
+            currentConfig.providers[currentProvider].apiKey = newApiKey;
+            setApiKey(newApiKey);
+            updateConfig(currentConfig);
+            ipcRenderer.send('save-config', currentConfig);
+            showMessage('API Key 设置成功！', 'success');
+        } else {
+            showMessage('请输入有效的 API Key。', 'error');
+        }
     });
 
     // 切换设置面板
     toggleButton.addEventListener('click', function() {
         settingsPanel.classList.toggle('show');
-        document.getElementById('api-key').value = apiKey;
-        document.getElementById('shortcut').value = currentShortcut;
-        document.getElementById('config-path').textContent = configPath;
+        
+        // 使用当前配置中的值
+        const provider = currentConfig?.providers?.[currentConfig.currentProvider] || {};
+        const apiKeyInput = document.getElementById('api-key');
+        
+        // 设置 API Key 输入框的值和占位符
+        apiKeyInput.value = provider.apiKey || '';
+        apiKeyInput.placeholder = provider.apiKey ? '' : '请输入您的 API Key';
+        
+        document.getElementById('shortcut').value = currentConfig?.shortcut || 'CommandOrControl+Alt+A';
+        document.getElementById('config-path').textContent = configPath || '未设置';
     });
 
     // 点击设置面板外部时关闭面板
@@ -197,23 +276,10 @@ function initSettings() {
         }
     });
 
-    // 保存 API Key
-    document.getElementById('save-button').addEventListener('click', function() {
-        const newApiKey = document.getElementById('api-key').value;
-        if (newApiKey.trim() !== '') {
-            apiKey = newApiKey;
-            setApiKey(newApiKey);
-            ipcRenderer.send('save-config', { apiKey, shortcut: currentShortcut });
-            showMessage('API Key 设置成功！', 'success');
-        } else {
-            showMessage('请输入有效的 API Key。', 'error');
-        }
-    });
-
     // 保存快捷键
     document.getElementById('shortcut').addEventListener('change', function() {
-        currentShortcut = this.value;
-        ipcRenderer.send('save-config', { apiKey, shortcut: currentShortcut });
+        currentConfig.shortcut = this.value;
+        ipcRenderer.send('save-config', currentConfig);
         showMessage('快捷键设置成功！', 'success');
     });
 

@@ -10,7 +10,7 @@
   <link rel="stylesheet" href="styles/chat.css">
   <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
 </head>
-<body>
+<body spellcheck="false">
   <!-- 添加自定义标题栏 -->
   <div class="titlebar">
     <div class="titlebar-drag-region"></div>
@@ -70,13 +70,13 @@
           <label for="ai-comp">AI 厂商选择</label>
           <select id="ai-comp">
             <option value="deepseek">DeepSeek</option>
-            <option value="silconflow">Silconflow 硅基流动</option>
+            <option value="siliconflow">Siliconflow 硅基流动</option>
           </select>
         </div>
         <!-- API Key 部分 -->
         <div class="input-group">
           <label for="api-key">API Key</label>
-          <input type="text" id="api-key" placeholder="请输入您的 DeepSeek API Key">
+          <input type="text" id="api-key" placeholder="请输入您的 API Key" spellcheck="false">
           <div class="button-group">
             <button id="test-button" class="secondary">测试 API Key</button>
             <button id="save-button" class="primary">保存</button>
@@ -154,7 +154,7 @@
       <!-- 聊天记录将在这里显示 -->
     </div>
     <div id="input-area">
-      <input type="text" id="user-input" placeholder="在此输入消息...">
+      <input type="text" id="user-input" placeholder="在此输入消息..." spellcheck="false">
       <button id="send-button">发送</button>
       <button id="stop-button">
           <span class="material-icons">stop</span>
