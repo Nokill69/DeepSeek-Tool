@@ -89,18 +89,86 @@ function updateConfig(config) {
     currentConfig = config;
     const provider = config.providers?.[config.currentProvider] || {};
     apiKey = provider.apiKey || '';
-    
-    console.log('配置已更新:', {
-        currentProvider: config.currentProvider,
-        hasApiKey: !!provider.apiKey
+}
+
+// 初始化聊天功能
+function initChat() {
+    const userInput = document.getElementById('user-input');
+    const sendButton = document.getElementById('send-button');
+    const stopButton = document.getElementById('stop-button');
+    const clearButton = document.getElementById('clear-button');
+    const chatHistory = document.getElementById('chat-history');
+
+    // 初始化滚动处理
+    initScrollHandler(chatHistory);
+
+    // 添加窗口显示事件监听
+    ipcRenderer.on('window-shown', () => {
+        // 聚焦到输入框
+        userInput.focus();
     });
+
+    // 接收初始配置
+    ipcRenderer.on('init-config', (event, config) => {
+        console.log('chat.js 收到配置:', config);
+        updateConfig(config);
+    });
+
+    // 处理发送消息
+    async function handleSendMessage() {
+        const userInput = document.getElementById('user-input').value;
+        await sendMessage(userInput);
+    }
+
+    // 绑定发送按钮事件
+    document.getElementById('send-button').addEventListener('click', handleSendMessage);
+
+    // 绑定输入框回车事件
+    document.getElementById('user-input').addEventListener('keypress', function(event) {
+        if (event.key === 'Enter' && !event.shiftKey) {
+            event.preventDefault();
+            handleSendMessage();
+        }
+    });
+
+    stopButton.addEventListener('click', stopResponse);
+
+    // 添加清除历史按钮的事件监听
+    clearButton.addEventListener('click', () => {
+        clearHistory();
+        // 清除历史时重置锁定状态
+        isScrollLocked = true;
+    });
+
+    // 确保停止按钮初始状态是隐藏的
+    stopButton.style.display = 'none';
+
+    // 添加背景样式切换监听
+    const backgroundStyle = document.getElementById('background-style');
+    if (backgroundStyle) {
+        backgroundStyle.addEventListener('change', (e) => {
+            updateBackgroundStyle(e.target.value);
+        });
+        // 设置初始样式
+        updateBackgroundStyle('fill');
+    }
 }
 
 // 处理发送消息
 async function sendMessage(userInput) {
-    if (!currentConfig) {
-        showMessage('配置未初始化，请检查设置。', 'error');
-        return;
+    const chatHistory = document.getElementById('chat-history');
+    const sendButton = document.getElementById('send-button');
+    const stopButton = document.getElementById('stop-button');
+
+    if (!currentConfig?.providers) {
+        // 等待一小段时间，让配置有机会初始化
+        await new Promise(resolve => setTimeout(resolve, 100));
+        
+        // 再次检查配置
+        if (!currentConfig?.providers) {
+            showMessage('配置未初始化，请检查设置。', 'error');
+            return;
+        }
     }
 
     if (userInput.trim() === '') {
@@ -108,14 +176,11 @@ async function sendMessage(userInput) {
         return;
     }
 
-    const provider = currentConfig.providers?.[currentConfig.currentProvider] || {};
-    if (!provider.apiKey) {
+    const provider = currentConfig.providers[currentConfig.currentProvider];
+    if (!provider?.apiKey) {
         showMessage('API Key 未设置，请在设置中配置。', 'error');
         return;
     }
-
-    const sendButton = document.getElementById('send-button');
-    const stopButton = document.getElementById('stop-button');
     
     try {
         sendButton.disabled = true;
@@ -123,7 +188,6 @@ async function sendMessage(userInput) {
         
         messageHistory.push({ role: 'user', content: userInput });
         
-        const chatHistory = document.getElementById('chat-history');
         const userMessage = document.createElement('div');
         userMessage.className = 'user-message';
         const userMessageContent = document.createElement('div');
@@ -157,7 +221,35 @@ async function sendMessage(userInput) {
 
         if (!response.ok) {
             const errorData = await response.json();
-            throw new Error(errorData.error?.message || '调用 API 失败');
+            let errorMessage = '与 AI 对话时出现错误';
+            
+            // 根据 HTTP 状态码处理错误
+            switch (response.status) {
+                case 400:
+                    errorMessage = `参数不正确: ${errorData.message || '请检查请求参数'}`;
+                    break;
+                case 401:
+                    errorMessage = 'API Key 未正确设置，请在设置中检查';
+                    break;
+                case 403:
+                    errorMessage = errorData.message?.includes('authentication') 
+                        ? '该模型需要实名认证，请先完成认证' 
+                        : `权限不足: ${errorData.message}`;
+                    break;
+                case 429:
+                    errorMessage = `触发限流: ${errorData.message || '请求过于频繁，请稍后再试'}`;
+                    break;
+                case 503:
+                case 504:
+                    errorMessage = '服务暂时不可用，请稍后重试';
+                    break;
+                case 500:
+                    errorMessage = `服务器错误: ${errorData.message || '请联系客服处理'}`;
+                    break;
+                default:
+                    errorMessage = errorData.message || '未知错误，请稍后重试';
+            }
+            throw new Error(errorMessage);
         }
 
         const reader = response.body.getReader();
@@ -240,7 +332,7 @@ async function sendMessage(userInput) {
             abortMessage.innerHTML = '<em>回答已停止</em>';
             chatHistory.appendChild(abortMessage);
             
-            // 在中止时也处理所有未处理的代码块
+            // 处理未完成的代码块
             const messageContent = document.querySelector('.ai-message:last-child .message-content');
             if (messageContent) {
                 messageContent.querySelectorAll('pre code').forEach(codeBlock => {
@@ -253,26 +345,17 @@ async function sendMessage(userInput) {
                 });
             }
         } else {
-            console.error('调用 DeepSeek API 时出错:', error);
-            let errorMessage = '与 AI 对话时出现错误';
+            console.error('调用 API 时出错:', error);
             
-            // 处理常见的 API 错误
-            if (error.message.includes('invalid_api_key')) {
-                errorMessage = 'API Key 无效，请检查设置中的 API Key 是否正确。';
-            } else if (error.message.includes('insufficient_quota')) {
-                errorMessage = 'API 配额不足，请检查您的账户余额。';
-            } else if (error.message.includes('rate_limit_exceeded')) {
-                errorMessage = '请求过于频繁，请稍后再试。';
-            }
+            // 显示错误消息
+            showMessage(error.message, 'error');
             
-            showMessage(errorMessage, 'error');
-            
-            // 在聊天界面也显示错误信息
+            // 在聊天界面显示错误信息
             const errorDiv = document.createElement('div');
             errorDiv.className = 'ai-message error';
             const errorContent = document.createElement('div');
             errorContent.className = 'message-content';
-            errorContent.innerHTML = `<em>${errorMessage}</em>`;
+            errorContent.innerHTML = `<em>${error.message}</em>`;
             errorDiv.appendChild(errorContent);
             chatHistory.appendChild(errorDiv);
         }
@@ -319,59 +402,6 @@ function updateBackgroundStyle(style) {
     document.body.classList.remove('bg-fill', 'bg-center', 'bg-contain', 'bg-stretch', 'bg-tile');
     // 添加选中的样式类
     document.body.classList.add(`bg-${style}`);
-}
-
-// 初始化聊天相关事件
-function initChat() {
-    const userInput = document.getElementById('user-input');
-    const sendButton = document.getElementById('send-button');
-    const stopButton = document.getElementById('stop-button');
-    const clearButton = document.getElementById('clear-button');
-    const chatHistory = document.getElementById('chat-history');
-
-    // 初始化滚动处理
-    initScrollHandler(chatHistory);
-
-    // 添加窗口显示事件监听
-    ipcRenderer.on('window-shown', () => {
-        // 聚焦到输入框
-        userInput.focus();
-    });
-
-    userInput.addEventListener('keydown', function(event) {
-        if (event.key === 'Enter') {
-            event.preventDefault();
-            sendButton.click();
-        }
-    });
-
-    sendButton.addEventListener('click', () => {
-        sendMessage(userInput.value);
-        // 发送新消息时重新锁定滚动
-        isScrollLocked = true;
-    });
-
-    stopButton.addEventListener('click', stopResponse);
-
-    // 添加清除历史按钮的事件监听
-    clearButton.addEventListener('click', () => {
-        clearHistory();
-        // 清除历史时重置锁定状态
-        isScrollLocked = true;
-    });
-
-    // 确保停止按钮初始状态是隐藏的
-    stopButton.style.display = 'none';
-
-    // 添加背景样式切换监听
-    const backgroundStyle = document.getElementById('background-style');
-    if (backgroundStyle) {
-        backgroundStyle.addEventListener('change', (e) => {
-            updateBackgroundStyle(e.target.value);
-        });
-        // 设置初始样式
-        updateBackgroundStyle('fill');
-    }
 }
 
 // 修改透明度控制的代码
