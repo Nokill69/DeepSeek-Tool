@@ -220,35 +220,74 @@ async function sendMessage(userInput) {
         });
 
         if (!response.ok) {
-            const errorData = await response.json();
+            let errorData;
             let errorMessage = '与 AI 对话时出现错误';
             
-            // 根据 HTTP 状态码处理错误
-            switch (response.status) {
-                case 400:
-                    errorMessage = `参数不正确: ${errorData.message || '请检查请求参数'}`;
-                    break;
-                case 401:
-                    errorMessage = 'API Key 未正确设置，请在设置中检查';
-                    break;
-                case 403:
-                    errorMessage = errorData.message?.includes('authentication') 
-                        ? '该模型需要实名认证，请先完成认证' 
-                        : `权限不足: ${errorData.message}`;
-                    break;
-                case 429:
-                    errorMessage = `触发限流: ${errorData.message || '请求过于频繁，请稍后再试'}`;
-                    break;
-                case 503:
-                case 504:
-                    errorMessage = '服务暂时不可用，请稍后重试';
-                    break;
-                case 500:
-                    errorMessage = `服务器错误: ${errorData.message || '请联系客服处理'}`;
-                    break;
-                default:
-                    errorMessage = errorData.message || '未知错误，请稍后重试';
+            // 尝试解析错误响应
+            try {
+                const contentType = response.headers.get('content-type');
+                if (contentType && contentType.includes('application/json')) {
+                    errorData = await response.json();
+                } else {
+                    // 如果不是 JSON，获取文本内容用于调试
+                    const text = await response.text();
+                    console.error('收到非 JSON 响应:', text);
+                    errorData = { message: '服务器返回了意外的响应格式' };
+                }
+            } catch (parseError) {
+                console.error('解析错误响应失败:', parseError);
+                errorData = { message: '无法解析服务器响应' };
             }
+
+            // 根据不同厂商处理错误
+            if (currentConfig.currentProvider === 'siliconflow') {
+                // SiliconFlow 的错误处理
+                switch (response.status) {
+                    case 400:
+                        errorMessage = `参数不正确: ${errorData.message || '请检查请求参数'}`;
+                        break;
+                    case 401:
+                        errorMessage = 'API Key 未正确设置，请在设置中检查';
+                        break;
+                    case 403:
+                        errorMessage = errorData.message?.includes('authentication') 
+                            ? '该模型需要实名认证，请先完成认证' 
+                            : `权限不足: ${errorData.message}`;
+                        break;
+                    case 429:
+                        errorMessage = `触发限流: ${errorData.message || '请求过于频繁，请稍后再试'}`;
+                        break;
+                    case 503:
+                    case 504:
+                        errorMessage = '服务暂时不可用，请稍后重试';
+                        break;
+                    case 500:
+                        errorMessage = `服务器错误: ${errorData.message || '请联系客服处理'}`;
+                        break;
+                    default:
+                        if (response.status === 0) {
+                            errorMessage = '网络连接失败，请检查网络设置或代理配置';
+                        } else {
+                            errorMessage = errorData.message || `未知错误 (${response.status})，请稍后重试`;
+                        }
+                }
+            } else {
+                // DeepSeek 的错误处理
+                if (errorData.error?.message) {
+                    if (errorData.error.message.includes('invalid_api_key')) {
+                        errorMessage = 'API Key 无效，请检查设置中的 API Key 是否正确。';
+                    } else if (errorData.error.message.includes('insufficient_quota')) {
+                        errorMessage = 'API 配额不足，请检查您的账户余额。';
+                    } else if (errorData.error.message.includes('rate_limit_exceeded')) {
+                        errorMessage = '请求过于频繁，请稍后再试。';
+                    } else {
+                        errorMessage = errorData.error.message;
+                    }
+                } else if (response.status === 0) {
+                    errorMessage = '网络连接失败，请检查网络设置或代理配置';
+                }
+            }
+            
             throw new Error(errorMessage);
         }
 
